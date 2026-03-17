@@ -11,13 +11,17 @@ export declare class AuthService {
         accessToken: string;
         refreshToken: string;
         user: {
-            id: any;
-            email: any;
-            firstName: any;
-            lastName: any;
-            role: any;
-            avatarUrl: any;
-            school: any;
+            id: string;
+            email: string;
+            firstName: string;
+            lastName: string;
+            role: import(".prisma/client").$Enums.Role;
+            avatarUrl: string | null;
+            school: {
+                name: string;
+                id: string;
+                slug: string;
+            };
         };
     }>;
     refreshTokens(userId: string, refreshToken: string): Promise<{
@@ -25,7 +29,27 @@ export declare class AuthService {
         refreshToken: string;
     }>;
     logout(userId: string): Promise<void>;
-    getMe(userId: string): Promise<any>;
+    getMe(userId: string): Promise<{
+        school: {
+            name: string;
+            id: string;
+            slug: string;
+            logoUrl: string | null;
+        };
+        email: string;
+        id: string;
+        role: import(".prisma/client").$Enums.Role;
+        firstName: string;
+        lastName: string;
+        phone: string | null;
+        avatarUrl: string | null;
+        isActive: boolean;
+        lastLoginAt: Date | null;
+        schoolId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        deletedAt: Date | null;
+    }>;
     private generateTokens;
     hashPassword(password: string): Promise<string>;
 }

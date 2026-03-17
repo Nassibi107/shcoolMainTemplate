@@ -3,9 +3,35 @@ import { JwtPayload } from '../common/decorators/current-user.decorator';
 export declare class NotificationsController {
     private notificationsService;
     constructor(notificationsService: NotificationsService);
-    getForUser(user: JwtPayload, unread?: string): Promise<any>;
+    getForUser(user: JwtPayload, unread?: string): Promise<{
+        type: import(".prisma/client").$Enums.NotificationType;
+        title: string;
+        id: string;
+        schoolId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
+        channel: import(".prisma/client").$Enums.NotificationChannel;
+        body: string;
+        link: string | null;
+        isRead: boolean;
+        sentAt: Date | null;
+    }[]>;
     getUnreadCount(user: JwtPayload): Promise<number>;
-    markAsRead(id: string, user: JwtPayload): Promise<any>;
-    markAllAsRead(user: JwtPayload): Promise<any>;
-    send(dto: SendNotificationDto): Promise<any>;
+    markAsRead(id: string, user: JwtPayload): Promise<import(".prisma/client").Prisma.BatchPayload>;
+    markAllAsRead(user: JwtPayload): Promise<import(".prisma/client").Prisma.BatchPayload>;
+    send(dto: SendNotificationDto): Promise<{
+        type: import(".prisma/client").$Enums.NotificationType;
+        title: string;
+        id: string;
+        schoolId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
+        channel: import(".prisma/client").$Enums.NotificationChannel;
+        body: string;
+        link: string | null;
+        isRead: boolean;
+        sentAt: Date | null;
+    }>;
 }

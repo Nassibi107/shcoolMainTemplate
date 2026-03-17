@@ -135,3 +135,7 @@ The schema uses:
 - `createdAt` / `updatedAt` timestamps on all models
 
 See `prisma/schema.prisma` for the complete schema.
+
+Admin: admin@scopeschool.io / Admin@1234
+Teacher: teacher@scopeschool.io / Teacher@1234
+Student: student@scopeschool.io / Student@1234

@@ -35,7 +35,7 @@ let StudentsService = class StudentsService {
                 dateOfBirth: dto.dateOfBirth ? new Date(dto.dateOfBirth) : undefined,
                 gender: dto.gender,
                 address: dto.address,
-                parentId: dto.parentId,
+                ...(dto.parentId ? { parent: { connect: { id: dto.parentId } } } : {}),
                 school: { connect: { id: schoolId } },
                 user: {
                     create: {
@@ -209,13 +209,18 @@ let StudentsService = class StudentsService {
         if (!student)
             throw new common_1.NotFoundException('Student not found');
         const { classId, ...studentData } = dto;
+        const parentRelationUpdate = studentData.parentId === undefined
+            ? {}
+            : studentData.parentId
+                ? { parent: { connect: { id: studentData.parentId } } }
+                : { parent: { disconnect: true } };
         await this.prisma.student.update({
             where: { id },
             data: {
                 ...(studentData.dateOfBirth ? { dateOfBirth: new Date(studentData.dateOfBirth) } : {}),
                 gender: studentData.gender,
                 address: studentData.address,
-                parentId: studentData.parentId,
+                ...parentRelationUpdate,
                 user: {
                     update: {
                         firstName: studentData.firstName,

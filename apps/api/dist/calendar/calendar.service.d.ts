@@ -12,13 +12,52 @@ export interface CreateCalendarEventDto {
 export declare class CalendarService {
     private prisma;
     constructor(prisma: PrismaService);
-    create(schoolId: string, dto: CreateCalendarEventDto): Promise<any>;
+    create(schoolId: string, dto: CreateCalendarEventDto): Promise<{
+        type: import(".prisma/client").$Enums.CalendarEventType;
+        description: string | null;
+        title: string;
+        id: string;
+        schoolId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        deletedAt: Date | null;
+        color: string | null;
+        startDate: Date;
+        endDate: Date;
+        allDay: boolean;
+    }>;
     findAll(schoolId: string, filters: {
         from?: string;
         to?: string;
         type?: CalendarEventType;
-    }): Promise<any>;
-    update(id: string, schoolId: string, dto: Partial<CreateCalendarEventDto>): Promise<any>;
+    }): Promise<{
+        type: import(".prisma/client").$Enums.CalendarEventType;
+        description: string | null;
+        title: string;
+        id: string;
+        schoolId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        deletedAt: Date | null;
+        color: string | null;
+        startDate: Date;
+        endDate: Date;
+        allDay: boolean;
+    }[]>;
+    update(id: string, schoolId: string, dto: Partial<CreateCalendarEventDto>): Promise<{
+        type: import(".prisma/client").$Enums.CalendarEventType;
+        description: string | null;
+        title: string;
+        id: string;
+        schoolId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        deletedAt: Date | null;
+        color: string | null;
+        startDate: Date;
+        endDate: Date;
+        allDay: boolean;
+    }>;
     remove(id: string, schoolId: string): Promise<{
         message: string;
     }>;

@@ -9,13 +9,17 @@ export declare class AuthController {
         accessToken: string;
         refreshToken: string;
         user: {
-            id: any;
-            email: any;
-            firstName: any;
-            lastName: any;
-            role: any;
-            avatarUrl: any;
-            school: any;
+            id: string;
+            email: string;
+            firstName: string;
+            lastName: string;
+            role: import(".prisma/client").$Enums.Role;
+            avatarUrl: string | null;
+            school: {
+                name: string;
+                id: string;
+                slug: string;
+            };
         };
     }>;
     refresh(dto: RefreshTokenDto): Promise<{
@@ -23,5 +27,25 @@ export declare class AuthController {
         refreshToken: string;
     }>;
     logout(user: JwtPayload): Promise<void>;
-    getMe(user: JwtPayload): Promise<any>;
+    getMe(user: JwtPayload): Promise<{
+        school: {
+            name: string;
+            id: string;
+            slug: string;
+            logoUrl: string | null;
+        };
+        email: string;
+        id: string;
+        role: import(".prisma/client").$Enums.Role;
+        firstName: string;
+        lastName: string;
+        phone: string | null;
+        avatarUrl: string | null;
+        isActive: boolean;
+        lastLoginAt: Date | null;
+        schoolId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        deletedAt: Date | null;
+    }>;
 }

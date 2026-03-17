@@ -13,10 +13,36 @@ export declare class NotificationsService {
     private prisma;
     private readonly logger;
     constructor(prisma: PrismaService);
-    send(dto: SendNotificationDto): Promise<any>;
-    getForUser(userId: string, onlyUnread?: boolean): Promise<any>;
-    markAsRead(id: string, userId: string): Promise<any>;
-    markAllAsRead(userId: string): Promise<any>;
+    send(dto: SendNotificationDto): Promise<{
+        type: import(".prisma/client").$Enums.NotificationType;
+        title: string;
+        id: string;
+        schoolId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
+        channel: import(".prisma/client").$Enums.NotificationChannel;
+        body: string;
+        link: string | null;
+        isRead: boolean;
+        sentAt: Date | null;
+    }>;
+    getForUser(userId: string, onlyUnread?: boolean): Promise<{
+        type: import(".prisma/client").$Enums.NotificationType;
+        title: string;
+        id: string;
+        schoolId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
+        channel: import(".prisma/client").$Enums.NotificationChannel;
+        body: string;
+        link: string | null;
+        isRead: boolean;
+        sentAt: Date | null;
+    }[]>;
+    markAsRead(id: string, userId: string): Promise<import(".prisma/client").Prisma.BatchPayload>;
+    markAllAsRead(userId: string): Promise<import(".prisma/client").Prisma.BatchPayload>;
     getUnreadCount(userId: string): Promise<number>;
     private dispatchExternal;
 }

@@ -46,9 +46,13 @@ export function DataTable<T>({
     if (!sortKey || !sortDir) return 0;
     const aVal = (a as Record<string, unknown>)[sortKey];
     const bVal = (b as Record<string, unknown>)[sortKey];
-    if (aVal === undefined || bVal === undefined) return 0;
-    if (aVal < bVal) return sortDir === 'asc' ? -1 : 1;
-    if (aVal > bVal) return sortDir === 'asc' ? 1 : -1;
+    if (aVal == null || bVal == null) return 0;
+
+    const comparableA = typeof aVal === 'number' ? aVal : String(aVal).toLowerCase();
+    const comparableB = typeof bVal === 'number' ? bVal : String(bVal).toLowerCase();
+
+    if (comparableA < comparableB) return sortDir === 'asc' ? -1 : 1;
+    if (comparableA > comparableB) return sortDir === 'asc' ? 1 : -1;
     return 0;
   });
 
