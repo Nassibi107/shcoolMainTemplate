@@ -1,0 +1,9 @@
+export interface JwtPayload {
+    sub: string;
+    email: string;
+    role: string;
+    schoolId: string;
+    iat?: number;
+    exp?: number;
+}
+export declare const CurrentUser: (...dataOrPipes: unknown[]) => ParameterDecorator;

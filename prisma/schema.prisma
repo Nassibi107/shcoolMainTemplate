@@ -1,0 +1,669 @@
+// Scope School – Prisma Schema
+// Multi-tenant PostgreSQL schema with normalized models, soft deletes, and UUID PKs
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────
+
+enum Role {
+  ADMIN
+  ASSISTANT
+  TEACHER
+  STUDENT
+  PARENT
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum FeeCategory {
+  TUITION
+  INSURANCE
+  REGISTRATION
+  OTHER
+}
+
+enum SalaryStatus {
+  PENDING
+  PAID
+  PARTIAL
+}
+
+enum CertificateType {
+  REGISTRATION
+  COMPLETION
+  DIPLOMA
+  ATTENDANCE
+  GRADUATION_REPORT
+  CUSTOM
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum CalendarEventType {
+  HOLIDAY
+  EXAM
+  BREAK
+  MEETING
+  OTHER
+}
+
+enum NotificationType {
+  INFO
+  WARNING
+  ABSENCE_ALERT
+  PAYMENT_DUE
+  GRADE_POSTED
+  DOCUMENT_READY
+  LEAVE_UPDATE
+  SYSTEM
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+  SMS
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  EXPORT
+  GENERATE_CERTIFICATE
+}
+
+// ─────────────────────────────────────────────
+// SCHOOL (root tenant model)
+// ─────────────────────────────────────────────
+
+model School {
+  id              String   @id @default(uuid())
+  name            String
+  slug            String   @unique
+  logoUrl         String?
+  address         String?
+  phone           String?
+  email           String?
+  website         String?
+  primaryColor    String   @default("#0F1F3D")
+  accentColor     String   @default("#00C2A8")
+  locale          String   @default("en")
+  timezone        String   @default("UTC")
+  academicYearStart DateTime?
+  academicYearEnd   DateTime?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
+
+  users              User[]
+  students           Student[]
+  teachers           Teacher[]
+  assistants         Assistant[]
+  parents            Parent[]
+  classes            Class[]
+  subjects           Subject[]
+  payments           Payment[]
+  feeTypes           FeeType[]
+  certificateTemplates CertificateTemplate[]
+  certificates       Certificate[]
+  calendarEvents     CalendarEvent[]
+  notifications      Notification[]
+  auditLogs          AuditLog[]
+  notificationConfig NotificationConfig?
+
+  @@index([slug])
+  @@map("schools")
+}
+
+// ─────────────────────────────────────────────
+// USER (unified auth identity for all roles)
+// ─────────────────────────────────────────────
+
+model User {
+  id                  String    @id @default(uuid())
+  email               String
+  passwordHash        String
+  role                Role
+  firstName           String
+  lastName            String
+  phone               String?
+  avatarUrl           String?
+  refreshTokenHash    String?
+  isActive            Boolean   @default(true)
+  lastLoginAt         DateTime?
+  schoolId            String
+  school              School    @relation(fields: [schoolId], references: [id])
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  deletedAt           DateTime?
+
+  student             Student?
+  teacher             Teacher?
+  assistant           Assistant?
+  parent              Parent?
+  leaveRequestsApproved LeaveRequest[] @relation("ApprovedLeaves")
+  notifications       Notification[]
+  auditLogs           AuditLog[]
+
+  @@unique([email, schoolId])
+  @@index([schoolId])
+  @@index([role])
+  @@map("users")
+}
+
+// ─────────────────────────────────────────────
+// STUDENT
+// ─────────────────────────────────────────────
+
+model Student {
+  id              String    @id @default(uuid())
+  userId          String    @unique
+  user            User      @relation(fields: [userId], references: [id])
+  schoolId        String
+  school          School    @relation(fields: [schoolId], references: [id])
+  studentCode     String
+  dateOfBirth     DateTime?
+  gender          String?
+  address         String?
+  enrollmentDate  DateTime  @default(now())
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+
+  parentId        String?
+  parent          Parent?   @relation(fields: [parentId], references: [id])
+  classEnrollments ClassEnrollment[]
+  attendances     Attendance[]
+  grades          Grade[]
+  payments        Payment[]
+  certificates    Certificate[]
+  leaveRequests   LeaveRequest[]
+
+  @@unique([studentCode, schoolId])
+  @@index([schoolId])
+  @@index([parentId])
+  @@map("students")
+}
+
+// ─────────────────────────────────────────────
+// TEACHER
+// ─────────────────────────────────────────────
+
+model Teacher {
+  id              String    @id @default(uuid())
+  userId          String    @unique
+  user            User      @relation(fields: [userId], references: [id])
+  schoolId        String
+  school          School    @relation(fields: [schoolId], references: [id])
+  employeeCode    String
+  qualification   String?
+  specialization  String?
+  hireDate        DateTime  @default(now())
+  salary          Decimal   @default(0) @db.Decimal(10, 2)
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+
+  classes         Class[]
+  lessons         Lesson[]
+  grades          Grade[]
+  salaryPayments  TeacherSalaryPayment[]
+  leaveRequests   LeaveRequest[]
+
+  @@unique([employeeCode, schoolId])
+  @@index([schoolId])
+  @@map("teachers")
+}
+
+// ─────────────────────────────────────────────
+// ASSISTANT
+// ─────────────────────────────────────────────
+
+model Assistant {
+  id              String    @id @default(uuid())
+  userId          String    @unique
+  user            User      @relation(fields: [userId], references: [id])
+  schoolId        String
+  school          School    @relation(fields: [schoolId], references: [id])
+  employeeCode    String
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+
+  @@unique([employeeCode, schoolId])
+  @@index([schoolId])
+  @@map("assistants")
+}
+
+// ─────────────────────────────────────────────
+// PARENT
+// ─────────────────────────────────────────────
+
+model Parent {
+  id              String    @id @default(uuid())
+  userId          String    @unique
+  user            User      @relation(fields: [userId], references: [id])
+  schoolId        String
+  school          School    @relation(fields: [schoolId], references: [id])
+  occupation      String?
+  address         String?
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+
+  children        Student[]
+
+  @@index([schoolId])
+  @@map("parents")
+}
+
+// ─────────────────────────────────────────────
+// ACADEMIC STRUCTURE
+// ─────────────────────────────────────────────
+
+model Subject {
+  id          String    @id @default(uuid())
+  name        String
+  code        String
+  description String?
+  color       String    @default("#3D5A80")
+  schoolId    String
+  school      School    @relation(fields: [schoolId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  lessons     Lesson[]
+  grades      Grade[]
+
+  @@unique([code, schoolId])
+  @@index([schoolId])
+  @@map("subjects")
+}
+
+model Class {
+  id          String    @id @default(uuid())
+  name        String
+  code        String
+  level       String?
+  capacity    Int       @default(30)
+  academicYear String
+  schoolId    String
+  school      School    @relation(fields: [schoolId], references: [id])
+  teacherId   String?
+  teacher     Teacher?  @relation(fields: [teacherId], references: [id])
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  enrollments ClassEnrollment[]
+  lessons     Lesson[]
+
+  @@unique([code, schoolId, academicYear])
+  @@index([schoolId])
+  @@index([teacherId])
+  @@map("classes")
+}
+
+model ClassEnrollment {
+  id          String    @id @default(uuid())
+  studentId   String
+  student     Student   @relation(fields: [studentId], references: [id])
+  classId     String
+  class       Class     @relation(fields: [classId], references: [id])
+  enrolledAt  DateTime  @default(now())
+  leftAt      DateTime?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([studentId, classId])
+  @@index([classId])
+  @@map("class_enrollments")
+}
+
+model Lesson {
+  id          String    @id @default(uuid())
+  name        String
+  classId     String
+  class       Class     @relation(fields: [classId], references: [id])
+  subjectId   String
+  subject     Subject   @relation(fields: [subjectId], references: [id])
+  teacherId   String
+  teacher     Teacher   @relation(fields: [teacherId], references: [id])
+  dayOfWeek   Int       // 0=Monday … 6=Sunday
+  startTime   String    // "08:00"
+  endTime     String    // "09:00"
+  room        String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  schedules   Schedule[]
+  attendances Attendance[]
+
+  @@index([classId])
+  @@index([teacherId])
+  @@map("lessons")
+}
+
+model Schedule {
+  id          String    @id @default(uuid())
+  lessonId    String
+  lesson      Lesson    @relation(fields: [lessonId], references: [id])
+  date        DateTime  @db.Date
+  isCancelled Boolean   @default(false)
+  note        String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  attendances Attendance[]
+
+  @@unique([lessonId, date])
+  @@index([date])
+  @@map("schedules")
+}
+
+// ─────────────────────────────────────────────
+// ATTENDANCE
+// ─────────────────────────────────────────────
+
+model Attendance {
+  id          String           @id @default(uuid())
+  studentId   String
+  student     Student          @relation(fields: [studentId], references: [id])
+  lessonId    String
+  lesson      Lesson           @relation(fields: [lessonId], references: [id])
+  scheduleId  String?
+  schedule    Schedule?        @relation(fields: [scheduleId], references: [id])
+  date        DateTime         @db.Date
+  status      AttendanceStatus @default(PRESENT)
+  note        String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@unique([studentId, lessonId, date])
+  @@index([studentId])
+  @@index([lessonId, date])
+  @@map("attendances")
+}
+
+// ─────────────────────────────────────────────
+// GRADES
+// ─────────────────────────────────────────────
+
+model Grade {
+  id          String    @id @default(uuid())
+  studentId   String
+  student     Student   @relation(fields: [studentId], references: [id])
+  subjectId   String
+  subject     Subject   @relation(fields: [subjectId], references: [id])
+  teacherId   String
+  teacher     Teacher   @relation(fields: [teacherId], references: [id])
+  term        String    // e.g. "2024-T1"
+  score       Decimal   @db.Decimal(5, 2)
+  maxScore    Decimal   @default(100) @db.Decimal(5, 2)
+  letterGrade String?
+  note        String?
+  gradedAt    DateTime  @default(now())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([studentId, subjectId, term])
+  @@index([studentId])
+  @@index([subjectId])
+  @@map("grades")
+}
+
+// ─────────────────────────────────────────────
+// PAYMENTS
+// ─────────────────────────────────────────────
+
+model FeeType {
+  id          String      @id @default(uuid())
+  name        String
+  category    FeeCategory
+  amount      Decimal     @db.Decimal(10, 2)
+  description String?
+  schoolId    String
+  school      School      @relation(fields: [schoolId], references: [id])
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  deletedAt   DateTime?
+
+  payments    Payment[]
+
+  @@index([schoolId])
+  @@map("fee_types")
+}
+
+model Payment {
+  id          String        @id @default(uuid())
+  studentId   String
+  student     Student       @relation(fields: [studentId], references: [id])
+  feeTypeId   String
+  feeType     FeeType       @relation(fields: [feeTypeId], references: [id])
+  schoolId    String
+  school      School        @relation(fields: [schoolId], references: [id])
+  amount      Decimal       @db.Decimal(10, 2)
+  status      PaymentStatus @default(PENDING)
+  dueDate     DateTime
+  paidAt      DateTime?
+  reference   String?
+  note        String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  deletedAt   DateTime?
+
+  @@index([studentId, status])
+  @@index([schoolId])
+  @@map("payments")
+}
+
+model TeacherSalaryPayment {
+  id          String       @id @default(uuid())
+  teacherId   String
+  teacher     Teacher      @relation(fields: [teacherId], references: [id])
+  month       String       // "2024-03"
+  amount      Decimal      @db.Decimal(10, 2)
+  status      SalaryStatus @default(PENDING)
+  paidAt      DateTime?
+  note        String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@unique([teacherId, month])
+  @@index([teacherId])
+  @@map("teacher_salary_payments")
+}
+
+// ─────────────────────────────────────────────
+// CERTIFICATES & DOCUMENTS
+// ─────────────────────────────────────────────
+
+model CertificateTemplate {
+  id          String          @id @default(uuid())
+  name        String
+  type        CertificateType
+  htmlContent String          @db.Text
+  schoolId    String
+  school      School          @relation(fields: [schoolId], references: [id])
+  isActive    Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  deletedAt   DateTime?
+
+  certificates Certificate[]
+
+  @@index([schoolId])
+  @@map("certificate_templates")
+}
+
+model Certificate {
+  id          String          @id @default(uuid())
+  studentId   String
+  student     Student         @relation(fields: [studentId], references: [id])
+  templateId  String
+  template    CertificateTemplate @relation(fields: [templateId], references: [id])
+  schoolId    String
+  school      School          @relation(fields: [schoolId], references: [id])
+  type        CertificateType
+  pdfUrl      String?
+  issuedAt    DateTime        @default(now())
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([studentId])
+  @@index([schoolId])
+  @@map("certificates")
+}
+
+// ─────────────────────────────────────────────
+// CALENDAR EVENTS
+// ─────────────────────────────────────────────
+
+model CalendarEvent {
+  id          String             @id @default(uuid())
+  title       String
+  description String?
+  type        CalendarEventType
+  startDate   DateTime
+  endDate     DateTime
+  allDay      Boolean            @default(true)
+  color       String?
+  schoolId    String
+  school      School             @relation(fields: [schoolId], references: [id])
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  deletedAt   DateTime?
+
+  @@index([schoolId, startDate])
+  @@map("calendar_events")
+}
+
+// ─────────────────────────────────────────────
+// LEAVE REQUESTS
+// ─────────────────────────────────────────────
+
+model LeaveRequest {
+  id          String      @id @default(uuid())
+  requesterId String
+  requester   Student?    @relation(fields: [requesterId], references: [id])
+  teacherId   String?
+  teacher     Teacher?    @relation(fields: [teacherId], references: [id])
+  startDate   DateTime
+  endDate     DateTime
+  reason      String
+  status      LeaveStatus @default(PENDING)
+  approverId  String?
+  approver    User?       @relation("ApprovedLeaves", fields: [approverId], references: [id])
+  note        String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([requesterId])
+  @@index([teacherId])
+  @@map("leave_requests")
+}
+
+// ─────────────────────────────────────────────
+// NOTIFICATIONS
+// ─────────────────────────────────────────────
+
+model Notification {
+  id          String              @id @default(uuid())
+  userId      String
+  user        User                @relation(fields: [userId], references: [id])
+  schoolId    String
+  school      School              @relation(fields: [schoolId], references: [id])
+  type        NotificationType
+  channel     NotificationChannel @default(IN_APP)
+  title       String
+  body        String
+  link        String?
+  isRead      Boolean             @default(false)
+  sentAt      DateTime?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  @@index([userId, isRead])
+  @@index([schoolId])
+  @@map("notifications")
+}
+
+model NotificationConfig {
+  id          String   @id @default(uuid())
+  schoolId    String   @unique
+  school      School   @relation(fields: [schoolId], references: [id])
+  emailEnabled Boolean @default(true)
+  smsEnabled   Boolean @default(false)
+  smtpHost    String?
+  smtpPort    Int?
+  smtpUser    String?
+  smtpPass    String?
+  twilioSid   String?
+  twilioToken String?
+  twilioFrom  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("notification_configs")
+}
+
+// ─────────────────────────────────────────────
+// AUDIT LOG
+// ─────────────────────────────────────────────
+
+model AuditLog {
+  id          String      @id @default(uuid())
+  userId      String
+  user        User        @relation(fields: [userId], references: [id])
+  schoolId    String
+  school      School      @relation(fields: [schoolId], references: [id])
+  action      AuditAction
+  entity      String
+  entityId    String
+  changes     Json?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime    @default(now())
+
+  @@index([schoolId, createdAt])
+  @@index([userId])
+  @@map("audit_logs")
+}
