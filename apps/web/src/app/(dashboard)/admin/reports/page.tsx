@@ -8,47 +8,22 @@ import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Select } from '@/components/ui/Select';
 import { Badge } from '@/components/ui/Badge';
 import { useAuth } from '@/hooks/useAuth';
+import { useMonthlyRevenue, useAttendanceByClass, useGradeDistribution } from '@/hooks/useDashboardStats';
 import { formatCurrency } from '@/lib/utils';
+import api from '@/lib/api';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  LineChart, Line, PieChart, Pie, Cell, Legend,
+  PieChart, Pie, Cell, Legend,
 } from 'recharts';
 
-const MONTHLY_REVENUE = [
-  { month: 'Sep', revenue: 42000, target: 40000 },
-  { month: 'Oct', revenue: 44500, target: 42000 },
-  { month: 'Nov', revenue: 41200, target: 42000 },
-  { month: 'Dec', revenue: 38000, target: 42000 },
-  { month: 'Jan', revenue: 45800, target: 44000 },
-  { month: 'Feb', revenue: 47200, target: 44000 },
-  { month: 'Mar', revenue: 49100, target: 46000 },
-];
-
-const ATTENDANCE_TREND = [
-  { week: 'W1', rate: 94.2 }, { week: 'W2', rate: 92.8 }, { week: 'W3', rate: 95.1 },
-  { week: 'W4', rate: 93.5 }, { week: 'W5', rate: 91.2 }, { week: 'W6', rate: 96.0 },
-  { week: 'W7', rate: 94.8 }, { week: 'W8', rate: 93.1 },
-];
-
-const GRADE_DISTRIBUTION = [
-  { name: 'A (90–100%)', value: 38, color: '#22c55e' },
-  { name: 'B (80–89%)', value: 52, color: '#3b82f6' },
-  { name: 'C (70–79%)', value: 29, color: '#f59e0b' },
-  { name: 'D (60–69%)', value: 12, color: '#f97316' },
-  { name: 'F (< 60%)', value: 5, color: '#ef4444' },
-];
-
-const CLASS_ATTENDANCE = [
-  { class: '1A', rate: 96 }, { class: '1B', rate: 94 }, { class: '2A', rate: 91 },
-  { class: '3A', rate: 93 }, { class: '3B', rate: 97 }, { class: '4A', rate: 89 },
-];
-
 const REPORTS_LIST = [
-  { id: '1', name: 'Monthly Attendance Report', description: 'Full attendance breakdown by class and student', type: 'Attendance', icon: CalendarCheck },
-  { id: '2', name: 'Financial Summary Report', description: 'Fee collection, outstanding payments, salary summary', type: 'Financial', icon: CreditCard },
-  { id: '3', name: 'Academic Performance Report', description: 'Grade distribution and subject performance analysis', type: 'Academic', icon: FileBarChart },
-  { id: '4', name: 'Student Enrollment Report', description: 'Enrollment trends and demographics overview', type: 'Students', icon: Users },
+  { id: 'summary', key: '1', name: 'Summary Report', description: 'Dashboard stats, attendance by class, monthly revenue', type: 'Summary', icon: FileBarChart },
+  { id: 'summary', key: '2', name: 'Financial Summary Report', description: 'Fee collection and revenue overview', type: 'Financial', icon: CreditCard },
+  { id: 'summary', key: '3', name: 'Attendance Report', description: 'Attendance breakdown by class', type: 'Attendance', icon: CalendarCheck },
+  { id: 'summary', key: '4', name: 'Academic Performance Report', description: 'Grade distribution overview', type: 'Academic', icon: Users },
 ];
+
+const GRADE_COLORS = ['#22c55e', '#3b82f6', '#f59e0b', '#f97316', '#ef4444'];
 
 export default function AdminReportsPage() {
   const { user } = useAuth();
@@ -56,19 +31,44 @@ export default function AdminReportsPage() {
   const [selectedClass, setSelectedClass] = useState('');
   const [generating, setGenerating] = useState<string | null>(null);
 
-  function handleGenerate(reportId: string, format: 'pdf' | 'excel') {
-    setGenerating(reportId);
-    setTimeout(() => {
-      setGenerating(null);
-      const filename = `report-${reportId}-${new Date().toISOString().slice(0, 10)}.${format === 'pdf' ? 'pdf' : 'xlsx'}`;
-      const blob = new Blob([`Mock ${format.toUpperCase()} report content`], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
+  const { data: revenueData } = useMonthlyRevenue();
+  const { data: attendanceData } = useAttendanceByClass();
+  const { data: gradeDist } = useGradeDistribution();
+
+  const monthlyRevenueChart = (revenueData ?? []).map((r) => ({
+    month: r.month.slice(-2) === '09' ? 'Sep' : r.month.slice(-2) === '10' ? 'Oct' : r.month.slice(-2) === '11' ? 'Nov' : r.month.slice(-2) === '12' ? 'Dec' : r.month.slice(-2) === '01' ? 'Jan' : r.month.slice(-2) === '02' ? 'Feb' : r.month.slice(-2) === '03' ? 'Mar' : r.month,
+    revenue: r.revenue,
+    target: r.revenue * 0.95,
+  }));
+
+  const gradeDistributionChart = [
+    { name: 'A (90–100%)', value: gradeDist?.A ?? 0, color: GRADE_COLORS[0] },
+    { name: 'B (80–89%)', value: gradeDist?.B ?? 0, color: GRADE_COLORS[1] },
+    { name: 'C (70–79%)', value: gradeDist?.C ?? 0, color: GRADE_COLORS[2] },
+    { name: 'D (60–69%)', value: gradeDist?.D ?? 0, color: GRADE_COLORS[3] },
+    { name: 'F (< 60%)', value: gradeDist?.F ?? 0, color: GRADE_COLORS[4] },
+  ];
+
+  async function handleGenerate(reportId: string, format: 'pdf' | 'excel', loadingKey: string) {
+    if (!user) return;
+    setGenerating(loadingKey);
+    try {
+      const res = await api.get(
+        `/schools/${user.school.id}/reports/export/${reportId}/${format}`,
+        { responseType: 'blob' },
+      );
+      const mime = format === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      const url = URL.createObjectURL(new Blob([res.data], { type: mime }));
       const a = document.createElement('a');
       a.href = url;
-      a.download = filename;
+      a.download = `report-${reportId}-${new Date().toISOString().slice(0, 10)}.${format === 'pdf' ? 'pdf' : 'xlsx'}`;
       a.click();
       URL.revokeObjectURL(url);
-    }, 1200);
+    } catch {
+      // ignore - user will see no download
+    } finally {
+      setGenerating(null);
+    }
   }
 
   if (!user) return null;
@@ -86,7 +86,7 @@ export default function AdminReportsPage() {
         {REPORTS_LIST.map((report) => {
           const Icon = report.icon;
           return (
-            <div key={report.id} className="bg-card rounded-card shadow-card p-5 flex items-start gap-4">
+            <div key={report.key} className="bg-card rounded-card shadow-card p-5 flex items-start gap-4">
               <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center shrink-0">
                 <Icon className="w-5 h-5 text-accent" />
               </div>
@@ -100,17 +100,17 @@ export default function AdminReportsPage() {
                   size="sm"
                   variant="ghost"
                   leftIcon={<Download className="w-3 h-3" />}
-                  onClick={() => handleGenerate(report.id, 'pdf')}
-                  disabled={generating === report.id}
+                  onClick={() => handleGenerate(report.id, 'pdf', report.key)}
+                  disabled={generating === report.key}
                 >
-                  {generating === report.id ? 'Generating…' : 'PDF'}
+                  {generating === report.key ? 'Generating…' : 'PDF'}
                 </Button>
                 <Button
                   size="sm"
                   variant="ghost"
                   leftIcon={<Download className="w-3 h-3" />}
-                  onClick={() => handleGenerate(report.id, 'excel')}
-                  disabled={generating === report.id}
+                  onClick={() => handleGenerate(report.id, 'excel', report.key)}
+                  disabled={generating === report.key}
                 >
                   Excel
                 </Button>
@@ -125,38 +125,17 @@ export default function AdminReportsPage() {
         {/* Revenue */}
         <Card>
           <CardHeader>
-            <CardTitle>Monthly Revenue vs Target</CardTitle>
-            <Badge variant="success">+8.2% vs last year</Badge>
+            <CardTitle>Monthly Revenue</CardTitle>
           </CardHeader>
           <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={MONTHLY_REVENUE} margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
+              <BarChart data={monthlyRevenueChart} margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
                 <XAxis dataKey="month" tick={{ fontSize: 11, fill: 'var(--color-muted)' }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 11, fill: 'var(--color-muted)' }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
                 <Tooltip formatter={(v: number) => [formatCurrency(v), '']} contentStyle={{ background: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: 8, fontSize: 12 }} />
                 <Bar dataKey="revenue" name="Revenue" fill="var(--color-accent)" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="target" name="Target" fill="var(--color-border)" radius={[4, 4, 0, 0]} />
               </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-
-        {/* Attendance Trend */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Attendance Rate Trend</CardTitle>
-            <Badge variant="secondary">Weekly avg</Badge>
-          </CardHeader>
-          <div className="h-56">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={ATTENDANCE_TREND} margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-                <XAxis dataKey="week" tick={{ fontSize: 11, fill: 'var(--color-muted)' }} axisLine={false} tickLine={false} />
-                <YAxis domain={[88, 98]} tick={{ fontSize: 11, fill: 'var(--color-muted)' }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} />
-                <Tooltip formatter={(v: number) => [`${v}%`, 'Attendance']} contentStyle={{ background: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: 8, fontSize: 12 }} />
-                <Line type="monotone" dataKey="rate" stroke="var(--color-accent)" strokeWidth={2.5} dot={{ r: 3, fill: 'var(--color-accent)' }} />
-              </LineChart>
             </ResponsiveContainer>
           </div>
         </Card>
@@ -167,8 +146,8 @@ export default function AdminReportsPage() {
           <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie data={GRADE_DISTRIBUTION} cx="50%" cy="50%" innerRadius={55} outerRadius={90} paddingAngle={3} dataKey="value">
-                  {GRADE_DISTRIBUTION.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                <Pie data={gradeDistributionChart} cx="50%" cy="50%" innerRadius={55} outerRadius={90} paddingAngle={3} dataKey="value">
+                  {gradeDistributionChart.map((entry, i) => <Cell key={i} fill={entry.color} />)}
                 </Pie>
                 <Tooltip contentStyle={{ background: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: 8, fontSize: 12 }} />
                 <Legend iconType="circle" iconSize={10} wrapperStyle={{ fontSize: 11 }} />
@@ -182,10 +161,10 @@ export default function AdminReportsPage() {
           <CardHeader><CardTitle>Attendance Rate by Class</CardTitle></CardHeader>
           <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={CLASS_ATTENDANCE} layout="vertical" margin={{ top: 5, right: 20, bottom: 5, left: 10 }}>
+              <BarChart data={attendanceData ?? []} layout="vertical" margin={{ top: 5, right: 20, bottom: 5, left: 10 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" horizontal={false} />
                 <XAxis type="number" domain={[80, 100]} tick={{ fontSize: 11, fill: 'var(--color-muted)' }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} />
-                <YAxis type="category" dataKey="class" tick={{ fontSize: 11, fill: 'var(--color-muted)' }} axisLine={false} tickLine={false} />
+                <YAxis type="category" dataKey="className" tick={{ fontSize: 11, fill: 'var(--color-muted)' }} axisLine={false} tickLine={false} />
                 <Tooltip formatter={(v: number) => [`${v}%`, 'Attendance']} contentStyle={{ background: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: 8, fontSize: 12 }} />
                 <Bar dataKey="rate" fill="var(--color-secondary)" radius={[0, 4, 4, 0]} />
               </BarChart>

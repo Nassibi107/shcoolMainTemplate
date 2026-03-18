@@ -1,3 +1,4 @@
+import { Response } from 'express';
 import { ReportsService } from './reports.service';
 export declare class ReportsController {
     private reportsService;
@@ -5,6 +6,7 @@ export declare class ReportsController {
     getDashboardStats(schoolId: string): Promise<{
         totalStudents: number;
         activeTeachers: number;
+        parentCount: number;
         absencesToday: number;
         monthlyRevenue: number;
     }>;
@@ -19,6 +21,13 @@ export declare class ReportsController {
         rate: number;
         totalStudents: number;
     })[]>;
+    getGradeDistribution(schoolId: string): Promise<{
+        A: number;
+        B: number;
+        C: number;
+        D: number;
+        F: number;
+    }>;
     getAuditLogs(schoolId: string, limit?: string): Promise<({
         user: {
             role: import(".prisma/client").$Enums.Role;
@@ -37,4 +46,6 @@ export declare class ReportsController {
         ipAddress: string | null;
         userAgent: string | null;
     })[]>;
+    exportPdf(schoolId: string, reportId: string, res: Response): Promise<void>;
+    exportExcel(schoolId: string, reportId: string, res: Response): Promise<void>;
 }

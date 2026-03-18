@@ -4,6 +4,7 @@ import { Role, PaymentStatus } from '@prisma/client';
 import { Response } from 'express';
 import { PaymentsService, CreatePaymentDto, UpdatePaymentStatusDto } from './payments.service';
 import { Roles } from '../common/decorators/roles.decorator';
+import { CurrentUser, JwtPayload } from '../common/decorators/current-user.decorator';
 
 @ApiTags('payments')
 @ApiBearerAuth()
@@ -27,6 +28,12 @@ export class PaymentsController {
     return this.paymentsService.findAll(schoolId, { status, studentId });
   }
 
+  @Get('fee-types')
+  @Roles(Role.ADMIN, Role.ASSISTANT)
+  getFeeTypes(@Param('schoolId') schoolId: string) {
+    return this.paymentsService.getFeeTypes(schoolId);
+  }
+
   @Get('summary')
   @Roles(Role.ADMIN, Role.ASSISTANT)
   getSummary(@Param('schoolId') schoolId: string) {
@@ -37,6 +44,70 @@ export class PaymentsController {
   @Roles(Role.ADMIN)
   getMonthlyRevenue(@Param('schoolId') schoolId: string) {
     return this.paymentsService.getMonthlyRevenue(schoolId);
+  }
+
+  @Get('my')
+  @Roles(Role.STUDENT)
+  async getMyPayments(
+    @Param('schoolId') schoolId: string,
+    @CurrentUser() user: JwtPayload,
+    @Query('month') month?: string,
+  ) {
+    const studentId = await this.paymentsService.getStudentIdByUser(schoolId, user.sub);
+    if (!studentId) return [];
+    return this.paymentsService.getByStudent(schoolId, studentId, month);
+  }
+
+  @Get('my/export/excel')
+  @Roles(Role.STUDENT)
+  async exportMyPaymentsExcel(
+    @Param('schoolId') schoolId: string,
+    @CurrentUser() user: JwtPayload,
+    @Query('month') month: string | undefined,
+    @Res() res: Response,
+  ) {
+    const studentId = await this.paymentsService.getStudentIdByUser(schoolId, user.sub);
+    if (!studentId) {
+      res.status(404).send('Student not found');
+      return;
+    }
+    const buffer = await this.paymentsService.exportStudentPaymentsExcel(schoolId, studentId, month);
+    res.set({
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition': `attachment; filename="my-payments-${month ?? 'all'}.xlsx"`,
+    });
+    res.send(buffer);
+  }
+
+  @Get('my/export/pdf')
+  @Roles(Role.STUDENT)
+  async exportMyPaymentsPdf(
+    @Param('schoolId') schoolId: string,
+    @CurrentUser() user: JwtPayload,
+    @Query('month') month: string | undefined,
+    @Res() res: Response,
+  ) {
+    const studentId = await this.paymentsService.getStudentIdByUser(schoolId, user.sub);
+    if (!studentId) {
+      res.status(404).send('Student not found');
+      return;
+    }
+    const buffer = await this.paymentsService.exportStudentPaymentsPdf(schoolId, studentId, month);
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="my-payments-${month ?? 'all'}.pdf"`,
+    });
+    res.send(buffer);
+  }
+
+  @Get('student/:studentId')
+  @Roles(Role.ADMIN, Role.ASSISTANT, Role.PARENT)
+  getStudentPayments(
+    @Param('schoolId') schoolId: string,
+    @Param('studentId') studentId: string,
+    @Query('month') month?: string,
+  ) {
+    return this.paymentsService.getByStudent(schoolId, studentId, month);
   }
 
   @Get('export/excel')

@@ -53,6 +53,7 @@ export declare class CertificatesService {
         htmlContent: string;
     }>;
     generate(schoolId: string, dto: GenerateCertificateDto): Promise<Buffer>;
+    generatePdfById(certificateId: string, schoolId: string): Promise<Buffer>;
     getStudentCertificates(studentId: string, schoolId: string): Promise<({
         template: {
             name: string;

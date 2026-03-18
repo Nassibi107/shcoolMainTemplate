@@ -6,17 +6,18 @@ import { KpiCard } from '@/components/dashboard/KpiCard';
 import { RevenueChart } from '@/components/dashboard/RevenueChart';
 import { AttendanceChart } from '@/components/dashboard/AttendanceChart';
 import { GradeDistributionChart } from '@/components/dashboard/GradeDistributionChart';
-import { useDashboardStats, useMonthlyRevenue, useAttendanceByClass } from '@/hooks/useDashboardStats';
+import { useDashboardStats, useMonthlyRevenue, useAttendanceByClass, useGradeDistribution } from '@/hooks/useDashboardStats';
 import { useAuth } from '@/hooks/useAuth';
 import { formatCurrency } from '@/lib/utils';
+import { useNotifications } from '@/hooks/useNotifications';
 
 export default function AdminDashboardPage() {
   const { user, loading: authLoading } = useAuth();
   const { stats, loading: statsLoading } = useDashboardStats();
   const { data: revenueData, loading: revenueLoading } = useMonthlyRevenue();
   const { data: attendanceData, loading: attendanceLoading } = useAttendanceByClass();
-
-  const mockGradeDistribution = { A: 38, B: 52, C: 29, D: 12, F: 5 };
+  const { data: gradeDistribution, loading: gradeLoading } = useGradeDistribution();
+  const { notifications } = useNotifications(5);
 
   if (authLoading || !user) return null;
 
@@ -63,7 +64,10 @@ export default function AdminDashboardPage() {
         <div className="xl:col-span-2">
           <RevenueChart data={revenueData} loading={revenueLoading} />
         </div>
-        <GradeDistributionChart data={mockGradeDistribution} loading={false} />
+        <GradeDistributionChart
+          data={gradeDistribution ?? { A: 0, B: 0, C: 0, D: 0, F: 0 }}
+          loading={gradeLoading}
+        />
       </div>
 
       {/* Attendance chart */}
@@ -75,26 +79,25 @@ export default function AdminDashboardPage() {
       <div className="bg-card rounded-card shadow-card p-6">
         <h3 className="font-heading font-bold text-primary mb-4">Recent Activity</h3>
         <div className="space-y-0 divide-y divide-border">
-          {[
-            { action: 'New student enrolled', detail: 'Ahmed Hassan · Class 3B', time: '5 min ago', type: 'success' },
-            { action: 'Payment received', detail: 'Sara Malik · Tuition Fee · $450', time: '22 min ago', type: 'success' },
-            { action: 'Absence alert', detail: 'Mohamed Ali · 3 consecutive absences', time: '1 hr ago', type: 'danger' },
-            { action: 'Grade posted', detail: 'Mathematics · Class 2A · by Mr. Johnson', time: '2 hrs ago', type: 'info' },
-            { action: 'Leave request', detail: 'Ms. Chen submitted leave request', time: '3 hrs ago', type: 'warning' },
-          ].map((item, i) => (
-            <div key={i} className="flex items-start gap-3 py-3">
+          {notifications.length === 0 && (
+            <p className="text-sm text-muted py-3">No recent activity.</p>
+          )}
+          {notifications.map((item) => (
+            <div key={item.id} className="flex items-start gap-3 py-3">
               <div
                 className={`mt-1 w-2 h-2 rounded-full shrink-0 ${
-                  item.type === 'success' ? 'bg-success' :
-                  item.type === 'danger' ? 'bg-danger' :
-                  item.type === 'warning' ? 'bg-warning' : 'bg-accent'
+                  item.type === 'DOCUMENT_READY' ? 'bg-success' :
+                  item.type === 'ABSENCE_ALERT' ? 'bg-danger' :
+                  item.type === 'WARNING' ? 'bg-warning' : 'bg-accent'
                 }`}
               />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-app-text">{item.action}</p>
-                <p className="text-xs text-muted mt-0.5 truncate">{item.detail}</p>
+                <p className="text-sm font-medium text-app-text">{item.title}</p>
+                <p className="text-xs text-muted mt-0.5 truncate">{item.body}</p>
               </div>
-              <span className="text-xs text-muted whitespace-nowrap shrink-0">{item.time}</span>
+              <span className="text-xs text-muted whitespace-nowrap shrink-0">
+                {new Date(item.createdAt).toLocaleTimeString()}
+              </span>
             </div>
           ))}
         </div>

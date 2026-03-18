@@ -44,5 +44,8 @@ export declare class NotificationsService {
     markAsRead(id: string, userId: string): Promise<import(".prisma/client").Prisma.BatchPayload>;
     markAllAsRead(userId: string): Promise<import(".prisma/client").Prisma.BatchPayload>;
     getUnreadCount(userId: string): Promise<number>;
+    notifyAdminsAndAssistants(schoolId: string, title: string, body: string, link?: string): Promise<{
+        sent: number;
+    }>;
     private dispatchExternal;
 }

@@ -65,6 +65,36 @@ export class NotificationsService {
     return this.prisma.notification.count({ where: { userId, isRead: false } });
   }
 
+  async notifyAdminsAndAssistants(
+    schoolId: string,
+    title: string,
+    body: string,
+    link?: string,
+  ) {
+    const targets = await this.prisma.user.findMany({
+      where: {
+        schoolId,
+        role: { in: ['ADMIN', 'ASSISTANT'] },
+        isActive: true,
+        deletedAt: null,
+      },
+      select: { id: true },
+    });
+
+    for (const target of targets) {
+      await this.send({
+        userId: target.id,
+        schoolId,
+        type: NotificationType.INFO,
+        title,
+        body,
+        link,
+      });
+    }
+
+    return { sent: targets.length };
+  }
+
   private async dispatchExternal(dto: SendNotificationDto) {
     const config = await this.prisma.notificationConfig.findUnique({
       where: { schoolId: dto.schoolId },

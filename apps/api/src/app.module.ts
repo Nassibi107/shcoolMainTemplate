@@ -14,6 +14,7 @@ import { CertificatesModule } from './certificates/certificates.module';
 import { CalendarModule } from './calendar/calendar.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { ReportsModule } from './reports/reports.module';
+import { DocumentRequestsModule } from './document-requests/document-requests.module';
 import appConfig from './config/app.config';
 
 @Module({
@@ -36,6 +37,7 @@ import appConfig from './config/app.config';
     CalendarModule,
     NotificationsModule,
     ReportsModule,
+    DocumentRequestsModule,
   ],
 })
 export class AppModule {}

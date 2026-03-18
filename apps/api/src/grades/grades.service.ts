@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 export interface UpsertGradeDto {
@@ -17,6 +17,14 @@ export class GradesService {
   constructor(private prisma: PrismaService) {}
 
   async upsertGrade(dto: UpsertGradeDto) {
+    const maxScore = dto.maxScore ?? 20;
+    if (maxScore <= 0 || maxScore > 20) {
+      throw new BadRequestException('maxScore must be between 1 and 20');
+    }
+    if (dto.score < 0 || dto.score > maxScore) {
+      throw new BadRequestException(`score must be between 0 and ${maxScore}`);
+    }
+
     return this.prisma.grade.upsert({
       where: {
         studentId_subjectId_term: {
@@ -31,13 +39,13 @@ export class GradesService {
         teacherId: dto.teacherId,
         term: dto.term,
         score: dto.score,
-        maxScore: dto.maxScore ?? 100,
+        maxScore,
         letterGrade: dto.letterGrade,
         note: dto.note,
       },
       update: {
         score: dto.score,
-        maxScore: dto.maxScore ?? 100,
+        maxScore,
         letterGrade: dto.letterGrade,
         note: dto.note,
         teacherId: dto.teacherId,

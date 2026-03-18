@@ -15,12 +15,27 @@ import { CreateStudentDto } from './dto/create-student.dto';
 import { UpdateStudentDto } from './dto/update-student.dto';
 import { FilterStudentsDto } from './dto/filter-students.dto';
 import { Roles } from '../common/decorators/roles.decorator';
+import { CurrentUser, JwtPayload } from '../common/decorators/current-user.decorator';
 
 @ApiTags('students')
 @ApiBearerAuth()
 @Controller('schools/:schoolId/students')
 export class StudentsController {
   constructor(private studentsService: StudentsService) {}
+
+  @Get('my-children')
+  @Roles(Role.PARENT)
+  @ApiOperation({ summary: 'Get children for parent' })
+  getMyChildren(@Param('schoolId') schoolId: string, @CurrentUser() user: JwtPayload) {
+    return this.studentsService.findByParentId(user.sub, schoolId);
+  }
+
+  @Get('me')
+  @Roles(Role.STUDENT)
+  @ApiOperation({ summary: 'Get current student profile' })
+  getMe(@Param('schoolId') schoolId: string, @CurrentUser() user: JwtPayload) {
+    return this.studentsService.findByUserId(user.sub, schoolId);
+  }
 
   @Post()
   @Roles(Role.ADMIN, Role.ASSISTANT)

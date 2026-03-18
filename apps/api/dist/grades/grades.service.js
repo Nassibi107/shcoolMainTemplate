@@ -17,6 +17,13 @@ let GradesService = class GradesService {
         this.prisma = prisma;
     }
     async upsertGrade(dto) {
+        const maxScore = dto.maxScore ?? 20;
+        if (maxScore <= 0 || maxScore > 20) {
+            throw new common_1.BadRequestException('maxScore must be between 1 and 20');
+        }
+        if (dto.score < 0 || dto.score > maxScore) {
+            throw new common_1.BadRequestException(`score must be between 0 and ${maxScore}`);
+        }
         return this.prisma.grade.upsert({
             where: {
                 studentId_subjectId_term: {
@@ -31,13 +38,13 @@ let GradesService = class GradesService {
                 teacherId: dto.teacherId,
                 term: dto.term,
                 score: dto.score,
-                maxScore: dto.maxScore ?? 100,
+                maxScore,
                 letterGrade: dto.letterGrade,
                 note: dto.note,
             },
             update: {
                 score: dto.score,
-                maxScore: dto.maxScore ?? 100,
+                maxScore,
                 letterGrade: dto.letterGrade,
                 note: dto.note,
                 teacherId: dto.teacherId,

@@ -21,14 +21,14 @@ interface GradeEntry {
 const ASSESSMENTS = ['Quiz 1', 'Quiz 2', 'Midterm', 'Project', 'Final'];
 
 const INITIAL_GRADES: GradeEntry[] = [
-  { studentId: '1', name: 'Ahmed Hassan', code: 'STU-001', scores: { 'Quiz 1': 85, 'Quiz 2': 90, Midterm: 78, Project: 92, Final: null } },
-  { studentId: '2', name: 'Sara Ali', code: 'STU-002', scores: { 'Quiz 1': 92, 'Quiz 2': 88, Midterm: 94, Project: 96, Final: null } },
-  { studentId: '3', name: 'Mohamed Saad', code: 'STU-003', scores: { 'Quiz 1': 70, 'Quiz 2': 75, Midterm: 68, Project: 80, Final: null } },
-  { studentId: '4', name: 'Fatima Omar', code: 'STU-004', scores: { 'Quiz 1': 95, 'Quiz 2': 93, Midterm: 97, Project: 98, Final: null } },
-  { studentId: '5', name: 'Youssef Malik', code: 'STU-005', scores: { 'Quiz 1': 60, 'Quiz 2': 65, Midterm: 58, Project: 72, Final: null } },
+  { studentId: '1', name: 'Ahmed Hassan', code: 'STU-001', scores: { 'Quiz 1': 17, 'Quiz 2': 18, Midterm: 16, Project: 18, Final: null } },
+  { studentId: '2', name: 'Sara Ali', code: 'STU-002', scores: { 'Quiz 1': 18, 'Quiz 2': 17, Midterm: 19, Project: 19, Final: null } },
+  { studentId: '3', name: 'Mohamed Saad', code: 'STU-003', scores: { 'Quiz 1': 14, 'Quiz 2': 15, Midterm: 13, Project: 16, Final: null } },
+  { studentId: '4', name: 'Fatima Omar', code: 'STU-004', scores: { 'Quiz 1': 19, 'Quiz 2': 18, Midterm: 19, Project: 20, Final: null } },
+  { studentId: '5', name: 'Youssef Malik', code: 'STU-005', scores: { 'Quiz 1': 12, 'Quiz 2': 13, Midterm: 11, Project: 14, Final: null } },
 ];
 
-const MAX_SCORES: Record<string, number> = { 'Quiz 1': 100, 'Quiz 2': 100, Midterm: 100, Project: 100, Final: 100 };
+const MAX_SCORES: Record<string, number> = { 'Quiz 1': 20, 'Quiz 2': 20, Midterm: 20, Project: 20, Final: 20 };
 const WEIGHTS: Record<string, number> = { 'Quiz 1': 10, 'Quiz 2': 10, Midterm: 25, Project: 15, Final: 40 };
 
 function calcAverage(scores: Record<string, number | null>): number | null {

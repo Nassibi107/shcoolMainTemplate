@@ -28,8 +28,27 @@ let ReportsController = class ReportsController {
     getAttendanceByClass(schoolId) {
         return this.reportsService.getAttendanceRateByClass(schoolId);
     }
+    getGradeDistribution(schoolId) {
+        return this.reportsService.getGradeDistribution(schoolId);
+    }
     getAuditLogs(schoolId, limit) {
         return this.reportsService.getRecentAuditLogs(schoolId, limit ? parseInt(limit) : 20);
+    }
+    async exportPdf(schoolId, reportId, res) {
+        const buffer = await this.reportsService.exportReportPdf(schoolId, reportId);
+        res.set({
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': `attachment; filename="report-${reportId}-${new Date().toISOString().slice(0, 10)}.pdf"`,
+        });
+        res.send(buffer);
+    }
+    async exportExcel(schoolId, reportId, res) {
+        const buffer = await this.reportsService.exportReportExcel(schoolId, reportId);
+        res.set({
+            'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition': `attachment; filename="report-${reportId}-${new Date().toISOString().slice(0, 10)}.xlsx"`,
+        });
+        res.send(buffer);
     }
 };
 exports.ReportsController = ReportsController;
@@ -50,6 +69,14 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], ReportsController.prototype, "getAttendanceByClass", null);
 __decorate([
+    (0, common_1.Get)('grade-distribution'),
+    (0, roles_decorator_1.Roles)(client_1.Role.ADMIN, client_1.Role.ASSISTANT),
+    __param(0, (0, common_1.Param)('schoolId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], ReportsController.prototype, "getGradeDistribution", null);
+__decorate([
     (0, common_1.Get)('audit-logs'),
     (0, roles_decorator_1.Roles)(client_1.Role.ADMIN),
     __param(0, (0, common_1.Param)('schoolId')),
@@ -58,6 +85,26 @@ __decorate([
     __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", void 0)
 ], ReportsController.prototype, "getAuditLogs", null);
+__decorate([
+    (0, common_1.Get)('export/:reportId/pdf'),
+    (0, roles_decorator_1.Roles)(client_1.Role.ADMIN, client_1.Role.ASSISTANT),
+    __param(0, (0, common_1.Param)('schoolId')),
+    __param(1, (0, common_1.Param)('reportId')),
+    __param(2, (0, common_1.Res)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:returntype", Promise)
+], ReportsController.prototype, "exportPdf", null);
+__decorate([
+    (0, common_1.Get)('export/:reportId/excel'),
+    (0, roles_decorator_1.Roles)(client_1.Role.ADMIN, client_1.Role.ASSISTANT),
+    __param(0, (0, common_1.Param)('schoolId')),
+    __param(1, (0, common_1.Param)('reportId')),
+    __param(2, (0, common_1.Res)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:returntype", Promise)
+], ReportsController.prototype, "exportExcel", null);
 exports.ReportsController = ReportsController = __decorate([
     (0, swagger_1.ApiTags)('reports'),
     (0, swagger_1.ApiBearerAuth)(),

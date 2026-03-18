@@ -42,6 +42,14 @@ let CertificatesController = class CertificatesController {
     getStudentCertificates(studentId, schoolId) {
         return this.certificatesService.getStudentCertificates(studentId, schoolId);
     }
+    async downloadById(id, schoolId, res) {
+        const buffer = await this.certificatesService.generatePdfById(id, schoolId);
+        res.set({
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': `attachment; filename="certificate-${id}.pdf"`,
+        });
+        res.send(buffer);
+    }
 };
 exports.CertificatesController = CertificatesController;
 __decorate([
@@ -90,6 +98,16 @@ __decorate([
     __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", void 0)
 ], CertificatesController.prototype, "getStudentCertificates", null);
+__decorate([
+    (0, common_1.Get)('download/:id'),
+    (0, roles_decorator_1.Roles)(client_1.Role.ADMIN, client_1.Role.ASSISTANT, client_1.Role.STUDENT, client_1.Role.PARENT),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Param)('schoolId')),
+    __param(2, (0, common_1.Res)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:returntype", Promise)
+], CertificatesController.prototype, "downloadById", null);
 exports.CertificatesController = CertificatesController = __decorate([
     (0, swagger_1.ApiTags)('certificates'),
     (0, swagger_1.ApiBearerAuth)(),

@@ -38,6 +38,9 @@ let NotificationsController = class NotificationsController {
     send(dto) {
         return this.notificationsService.send(dto);
     }
+    notifyTeacherRequest(user, dto) {
+        return this.notificationsService.notifyAdminsAndAssistants(user.schoolId, dto.title, dto.body, dto.link);
+    }
 };
 exports.NotificationsController = NotificationsController;
 __decorate([
@@ -78,6 +81,15 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], NotificationsController.prototype, "send", null);
+__decorate([
+    (0, common_1.Post)('teacher-request'),
+    (0, roles_decorator_1.Roles)(client_1.Role.TEACHER),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", void 0)
+], NotificationsController.prototype, "notifyTeacherRequest", null);
 exports.NotificationsController = NotificationsController = __decorate([
     (0, swagger_1.ApiTags)('notifications'),
     (0, swagger_1.ApiBearerAuth)(),

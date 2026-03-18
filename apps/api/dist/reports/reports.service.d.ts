@@ -1,10 +1,13 @@
 import { PrismaService } from '../prisma/prisma.service';
+import { PdfService } from '../certificates/pdf.service';
 export declare class ReportsService {
     private prisma;
-    constructor(prisma: PrismaService);
+    private pdfService;
+    constructor(prisma: PrismaService, pdfService: PdfService);
     getDashboardStats(schoolId: string): Promise<{
         totalStudents: number;
         activeTeachers: number;
+        parentCount: number;
         absencesToday: number;
         monthlyRevenue: number;
     }>;
@@ -37,4 +40,17 @@ export declare class ReportsService {
         ipAddress: string | null;
         userAgent: string | null;
     })[]>;
+    getMonthlyRevenue(schoolId: string): Promise<{
+        month: string;
+        revenue: number;
+    }[]>;
+    getGradeDistribution(schoolId: string): Promise<{
+        A: number;
+        B: number;
+        C: number;
+        D: number;
+        F: number;
+    }>;
+    exportReportPdf(schoolId: string, reportId: string): Promise<Buffer>;
+    exportReportExcel(schoolId: string, reportId: string): Promise<Buffer>;
 }

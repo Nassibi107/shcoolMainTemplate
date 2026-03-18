@@ -36,4 +36,18 @@ export class NotificationsController {
   send(@Body() dto: SendNotificationDto) {
     return this.notificationsService.send(dto);
   }
+
+  @Post('teacher-request')
+  @Roles(Role.TEACHER)
+  notifyTeacherRequest(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: { title: string; body: string; link?: string },
+  ) {
+    return this.notificationsService.notifyAdminsAndAssistants(
+      user.schoolId,
+      dto.title,
+      dto.body,
+      dto.link,
+    );
+  }
 }

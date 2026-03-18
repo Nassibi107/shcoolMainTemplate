@@ -18,6 +18,7 @@ const swagger_1 = require("@nestjs/swagger");
 const client_1 = require("@prisma/client");
 const classes_service_1 = require("./classes.service");
 const roles_decorator_1 = require("../common/decorators/roles.decorator");
+const current_user_decorator_1 = require("../common/decorators/current-user.decorator");
 let ClassesController = class ClassesController {
     constructor(classesService) {
         this.classesService = classesService;
@@ -27,6 +28,18 @@ let ClassesController = class ClassesController {
     }
     findAll(schoolId) {
         return this.classesService.findAll(schoolId);
+    }
+    getTimetable(schoolId) {
+        return this.classesService.getTimetable(schoolId);
+    }
+    getTimetableOptions(schoolId) {
+        return this.classesService.getOptions(schoolId);
+    }
+    createLesson(schoolId, dto) {
+        return this.classesService.createLesson(schoolId, dto);
+    }
+    getMyTimetable(schoolId, user, classId) {
+        return this.classesService.getTeacherScheduleByUser(schoolId, user.sub, classId);
     }
     findOne(id, schoolId) {
         return this.classesService.findOne(id, schoolId);
@@ -56,6 +69,41 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], ClassesController.prototype, "findAll", null);
+__decorate([
+    (0, common_1.Get)('timetable'),
+    (0, roles_decorator_1.Roles)(client_1.Role.ADMIN, client_1.Role.ASSISTANT),
+    __param(0, (0, common_1.Param)('schoolId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], ClassesController.prototype, "getTimetable", null);
+__decorate([
+    (0, common_1.Get)('timetable/options'),
+    (0, roles_decorator_1.Roles)(client_1.Role.ADMIN, client_1.Role.ASSISTANT),
+    __param(0, (0, common_1.Param)('schoolId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], ClassesController.prototype, "getTimetableOptions", null);
+__decorate([
+    (0, common_1.Post)('timetable/lessons'),
+    (0, roles_decorator_1.Roles)(client_1.Role.ADMIN, client_1.Role.ASSISTANT),
+    __param(0, (0, common_1.Param)('schoolId')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", void 0)
+], ClassesController.prototype, "createLesson", null);
+__decorate([
+    (0, common_1.Get)('timetable/teacher/me'),
+    (0, roles_decorator_1.Roles)(client_1.Role.TEACHER),
+    __param(0, (0, common_1.Param)('schoolId')),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
+    __param(2, (0, common_1.Query)('classId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object, String]),
+    __metadata("design:returntype", void 0)
+], ClassesController.prototype, "getMyTimetable", null);
 __decorate([
     (0, common_1.Get)(':id'),
     (0, roles_decorator_1.Roles)(client_1.Role.ADMIN, client_1.Role.ASSISTANT, client_1.Role.TEACHER),

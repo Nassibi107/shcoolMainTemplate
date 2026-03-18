@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { GraduationCap, UserCheck, Users, FileText } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { KpiCard } from '@/components/dashboard/KpiCard';
@@ -7,42 +8,43 @@ import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/hooks/useAuth';
+import { useDashboardStats } from '@/hooks/useDashboardStats';
+import { useDocumentRequestPendingCount } from '@/hooks/useDocumentRequests';
 
 export default function AssistantDashboardPage() {
   const { user, loading } = useAuth();
+  const { stats, loading: statsLoading } = useDashboardStats();
+  const pendingDocs = useDocumentRequestPendingCount();
+
   if (loading || !user) return null;
 
   return (
     <DashboardLayout user={user} pageTitle="Assistant Dashboard">
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-8">
-        <KpiCard title="Total Students" value="1,248" subtitle="enrolled" icon={GraduationCap} />
-        <KpiCard title="Active Teachers" value="64" subtitle="this year" icon={UserCheck} />
-        <KpiCard title="Parents" value="892" subtitle="registered" icon={Users} />
-        <KpiCard title="Pending Docs" value="7" subtitle="document requests" icon={FileText} />
+        <KpiCard title="Total Students" value={stats?.totalStudents.toLocaleString() ?? '—'} subtitle="enrolled" icon={GraduationCap} loading={statsLoading} />
+        <KpiCard title="Active Teachers" value={stats?.activeTeachers.toLocaleString() ?? '—'} subtitle="this year" icon={UserCheck} loading={statsLoading} />
+        <KpiCard title="Parents" value={stats ? String(stats.parentCount ?? '—') : '—'} subtitle="registered" icon={Users} loading={statsLoading} />
+        <KpiCard title="Pending Docs" value={String(pendingDocs)} subtitle="document requests" icon={FileText} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <Card>
           <CardHeader>
             <CardTitle>Document Request Queue</CardTitle>
+            <Link href="/assistant/documents">
+              <Button size="sm" variant="ghost">View all</Button>
+            </Link>
           </CardHeader>
           <div className="space-y-3">
-            {[
-              { student: 'Ahmed Hassan', type: 'Registration Certificate', date: 'Mar 17' },
-              { student: 'Sara Ali', type: 'Attendance Certificate', date: 'Mar 16' },
-              { student: 'Mohamed Saad', type: 'Completion Certificate', date: 'Mar 15' },
-            ].map((req, i) => (
-              <div key={i} className="flex items-center justify-between p-3 bg-surface rounded-lg border border-border">
-                <div>
-                  <p className="font-medium text-sm">{req.student}</p>
-                  <p className="text-xs text-muted">{req.type} · {req.date}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="warning">Pending</Badge>
-                  <Button size="sm">Process</Button>
-                </div>
-              </div>
-            ))}
+            {pendingDocs === 0 ? (
+              <p className="text-sm text-muted py-4 text-center">No pending document requests</p>
+            ) : (
+              <p className="text-sm text-muted py-4 text-center">
+                <Link href="/assistant/documents" className="text-accent hover:underline font-medium">
+                  {pendingDocs} pending request{pendingDocs !== 1 ? 's' : ''} — View all
+                </Link>
+              </p>
+            )}
           </div>
         </Card>
 

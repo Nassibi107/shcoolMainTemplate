@@ -56,4 +56,19 @@ export class CertificatesController {
   getStudentCertificates(@Param('studentId') studentId: string, @Param('schoolId') schoolId: string) {
     return this.certificatesService.getStudentCertificates(studentId, schoolId);
   }
+
+  @Get('download/:id')
+  @Roles(Role.ADMIN, Role.ASSISTANT, Role.STUDENT, Role.PARENT)
+  async downloadById(
+    @Param('id') id: string,
+    @Param('schoolId') schoolId: string,
+    @Res() res: Response,
+  ) {
+    const buffer = await this.certificatesService.generatePdfById(id, schoolId);
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="certificate-${id}.pdf"`,
+    });
+    res.send(buffer);
+  }
 }

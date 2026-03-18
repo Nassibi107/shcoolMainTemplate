@@ -1,88 +1,87 @@
 'use client';
 
 import { useState } from 'react';
-import { Download, Search, CreditCard, TrendingUp, AlertCircle, CheckCircle } from 'lucide-react';
+import { Download, Search, CreditCard, TrendingUp, AlertCircle, CheckCircle, Plus } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { DataTable, Column } from '@/components/ui/DataTable';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
-import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Modal } from '@/components/ui/Modal';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/Toast';
-import { exportPaymentsToExcel, exportSalariesToExcel } from '@/lib/excel';
+import { usePayments, createPayment, markPaymentAsPaid } from '@/hooks/usePayments';
+import { useStudents } from '@/hooks/useStudents';
 import { formatCurrency, formatDate } from '@/lib/utils';
-
-type PaymentStatus = 'PAID' | 'PENDING' | 'OVERDUE' | 'PARTIAL';
+import api from '@/lib/api';
 
 interface Payment {
   id: string;
   student: string;
-  class: string;
   feeType: string;
   amount: number;
   paid: number;
   dueDate: string;
   paidDate?: string;
-  status: PaymentStatus;
+  status: 'PAID' | 'PENDING' | 'OVERDUE' | 'CANCELLED';
   method?: string;
+  reference?: string;
+  studentId: string;
+  feeTypeId: string;
 }
 
-interface TeacherSalary {
-  id: string;
-  teacher: string;
-  amount: number;
-  month: string;
-  status: 'PAID' | 'PENDING';
-  paidDate?: string;
-}
-
-const MOCK_PAYMENTS: Payment[] = [
-  { id: '1', student: 'Ahmed Hassan', class: '3B', feeType: 'Tuition Fee', amount: 1200, paid: 1200, dueDate: '2024-03-01', paidDate: '2024-02-28', status: 'PAID', method: 'Bank Transfer' },
-  { id: '2', student: 'Sara Ali', class: '3B', feeType: 'Tuition Fee', amount: 1200, paid: 600, dueDate: '2024-03-01', status: 'PARTIAL', method: 'Cash' },
-  { id: '3', student: 'Mohamed Saad', class: '3A', feeType: 'Tuition Fee', amount: 1200, paid: 0, dueDate: '2024-02-01', status: 'OVERDUE' },
-  { id: '4', student: 'Fatima Omar', class: '3A', feeType: 'Activity Fee', amount: 150, paid: 150, dueDate: '2024-03-15', paidDate: '2024-03-10', status: 'PAID', method: 'Online' },
-  { id: '5', student: 'Youssef Malik', class: '2A', feeType: 'Tuition Fee', amount: 1100, paid: 0, dueDate: '2024-03-01', status: 'PENDING' },
-  { id: '6', student: 'Nour Hassan', class: '2A', feeType: 'Bus Fee', amount: 300, paid: 300, dueDate: '2024-03-01', paidDate: '2024-02-25', status: 'PAID', method: 'Bank Transfer' },
-  { id: '7', student: 'Karim Ali', class: '4A', feeType: 'Tuition Fee', amount: 1300, paid: 0, dueDate: '2024-02-15', status: 'OVERDUE' },
-  { id: '8', student: 'Lena Riad', class: '4A', feeType: 'Lab Fee', amount: 200, paid: 200, dueDate: '2024-03-20', paidDate: '2024-03-18', status: 'PAID', method: 'Online' },
-];
-
-const MOCK_SALARIES: TeacherSalary[] = [
-  { id: '1', teacher: 'James Johnson', amount: 4500, month: 'March 2024', status: 'PAID', paidDate: '2024-03-01' },
-  { id: '2', teacher: 'Wei Chen', amount: 4200, month: 'March 2024', status: 'PENDING' },
-  { id: '3', teacher: 'Sarah Miller', amount: 4300, month: 'March 2024', status: 'PAID', paidDate: '2024-03-01' },
-  { id: '4', teacher: 'Omar Hassan', amount: 3900, month: 'March 2024', status: 'PENDING' },
-  { id: '5', teacher: 'Priya Sharma', amount: 4100, month: 'March 2024', status: 'PAID', paidDate: '2024-03-02' },
-];
-
-const STATUS_VARIANTS: Record<PaymentStatus, 'success' | 'warning' | 'danger' | 'secondary'> = {
-  PAID: 'success', PENDING: 'warning', OVERDUE: 'danger', PARTIAL: 'secondary',
+const STATUS_VARIANTS: Record<Payment['status'], 'success' | 'warning' | 'danger' | 'secondary'> = {
+  PAID: 'success', PENDING: 'warning', OVERDUE: 'danger', CANCELLED: 'secondary',
 };
 
 export default function AdminPaymentsPage() {
   const { user } = useAuth();
   const toast = useToast();
-  const [activeTab, setActiveTab] = useState<'fees' | 'salaries'>('fees');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [feeTypeFilter, setFeeTypeFilter] = useState('');
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [form, setForm] = useState({
+    studentId: '',
+    feeTypeId: '',
+    amount: '',
+    dueDate: '',
+    note: '',
+  });
 
-  const filtered = MOCK_PAYMENTS.filter((p) => {
+  const { payments, feeTypes, summary, stats, loading, refetch } = usePayments();
+  const { data: students } = useStudents({ page: 1, limit: 100 });
+
+  const data: Payment[] = payments.map((p) => ({
+    id: p.id,
+    student: `${p.student.user.firstName} ${p.student.user.lastName}`,
+    feeType: p.feeType.name,
+    amount: Number(p.amount),
+    paid: p.status === 'PAID' ? Number(p.amount) : 0,
+    dueDate: p.dueDate,
+    paidDate: p.paidAt ?? undefined,
+    status: p.status,
+    method: p.reference ?? undefined,
+    reference: p.reference ?? undefined,
+    studentId: '',
+    feeTypeId: p.feeType.id,
+  }));
+
+  const filtered = data.filter((p) => {
     const matchSearch = !search || p.student.toLowerCase().includes(search.toLowerCase());
     const matchStatus = !statusFilter || p.status === statusFilter;
     const matchFee = !feeTypeFilter || p.feeType === feeTypeFilter;
     return matchSearch && matchStatus && matchFee;
   });
 
-  const totalCollected = filtered.filter((p) => p.status === 'PAID').reduce((s, p) => s + p.paid, 0);
-  const totalPending = filtered.filter((p) => p.status !== 'PAID').reduce((s, p) => s + (p.amount - p.paid), 0);
-  const overdueCount = filtered.filter((p) => p.status === 'OVERDUE').length;
-  const collectionRate = filtered.length > 0 ? Math.round((filtered.filter((p) => p.status === 'PAID').length / filtered.length) * 100) : 0;
+  const totalCollected = summary?.totalCollected ?? 0;
+  const totalPending = summary?.pending ?? 0;
+  const overdueCount = stats.overdueCount;
+  const collectionRate = stats.collectionRate;
 
   const paymentColumns: Column<Payment>[] = [
     { key: 'student', header: 'Student', sortable: true, render: (r) => <span className="font-medium">{r.student}</span> },
-    { key: 'class', header: 'Class', render: (r) => <Badge variant="secondary">{r.class}</Badge> },
     { key: 'feeType', header: 'Fee Type', render: (r) => <span className="text-sm">{r.feeType}</span> },
     {
       key: 'amount',
@@ -91,7 +90,7 @@ export default function AdminPaymentsPage() {
       render: (r) => (
         <div>
           <p className="font-mono font-semibold">{formatCurrency(r.amount)}</p>
-          {r.status === 'PARTIAL' && <p className="text-xs text-warning">Paid: {formatCurrency(r.paid)}</p>}
+          {r.status === 'PAID' && <p className="text-xs text-success">Paid: {formatCurrency(r.paid)}</p>}
         </div>
       ),
     },
@@ -103,40 +102,69 @@ export default function AdminPaymentsPage() {
       key: 'actions',
       header: '',
       render: (r) => r.status !== 'PAID' ? (
-        <Button size="sm" variant="ghost">Mark Paid</Button>
+        <Button size="sm" variant="ghost" onClick={() => handleMarkPaid(r.id)}>Mark Paid</Button>
       ) : null,
       className: 'text-right',
     },
   ];
 
-  const salaryColumns: Column<TeacherSalary>[] = [
-    { key: 'teacher', header: 'Teacher', render: (r) => <span className="font-medium">{r.teacher}</span> },
-    { key: 'month', header: 'Month', render: (r) => <span className="text-sm">{r.month}</span> },
-    { key: 'amount', header: 'Amount', sortable: true, render: (r) => <span className="font-mono font-semibold">{formatCurrency(r.amount)}</span> },
-    { key: 'status', header: 'Status', render: (r) => <Badge variant={r.status === 'PAID' ? 'success' : 'warning'}>{r.status}</Badge> },
-    { key: 'paidDate', header: 'Paid Date', render: (r) => <span className="text-sm text-muted">{r.paidDate ? formatDate(r.paidDate) : '—'}</span> },
-    {
-      key: 'actions',
-      header: '',
-      render: (r) => r.status === 'PENDING' ? <Button size="sm">Pay Now</Button> : null,
-      className: 'text-right',
-    },
-  ];
+  async function handleMarkPaid(id: string) {
+    if (!user) return;
+    try {
+      await markPaymentAsPaid({ schoolId: user.school.id, paymentId: id });
+      toast.success('Payment marked as paid');
+      refetch();
+    } catch {
+      toast.error('Failed to update payment');
+    }
+  }
 
-  function handleExport() {
-    if (activeTab === 'fees') {
-      exportPaymentsToExcel(filtered.map((p) => ({
-        student: p.student, class: p.class, feeType: p.feeType,
-        amount: p.amount, paid: p.paid, balance: p.amount - p.paid,
-        dueDate: p.dueDate, paidDate: p.paidDate ?? '', status: p.status, method: p.method ?? '',
-      })));
-      toast.success(`Exported ${filtered.length} payment records to Excel`);
-    } else {
-      exportSalariesToExcel(MOCK_SALARIES.map((s) => ({
-        teacher: s.teacher, month: s.month, amount: s.amount,
-        status: s.status, paidDate: s.paidDate ?? '',
-      })));
-      toast.success(`Exported ${MOCK_SALARIES.length} salary records to Excel`);
+  async function handleCreatePayment() {
+    if (!user) return;
+    if (!form.studentId || !form.feeTypeId || !form.amount || !form.dueDate) {
+      toast.error('Please fill all required fields');
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      await createPayment({
+        schoolId: user.school.id,
+        studentId: form.studentId,
+        feeTypeId: form.feeTypeId,
+        amount: Number(form.amount),
+        dueDate: form.dueDate,
+        note: form.note || undefined,
+      });
+      toast.success('Payment added successfully');
+      setIsCreateOpen(false);
+      setForm({ studentId: '', feeTypeId: '', amount: '', dueDate: '', note: '' });
+      refetch();
+    } catch {
+      toast.error('Failed to add payment');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handleExport() {
+    if (!user) return;
+    try {
+      const res = await api.get(`/schools/${user.school.id}/payments/export/excel`, {
+        responseType: 'blob',
+      });
+      const url = URL.createObjectURL(
+        new Blob([res.data], {
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        }),
+      );
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `payments-${new Date().toISOString().slice(0, 10)}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success('Export started');
+    } catch {
+      toast.error('Export failed');
     }
   }
 
@@ -162,48 +190,110 @@ export default function AdminPaymentsPage() {
         ))}
       </div>
 
-      {/* Tabs */}
-      <div className="flex border-b border-border mb-6">
-        {(['fees', 'salaries'] as const).map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`px-5 py-2.5 text-sm font-medium capitalize transition-colors border-b-2 -mb-px ${
-              activeTab === tab ? 'border-accent text-accent' : 'border-transparent text-muted hover:text-app-text'
-            }`}
-          >
-            {tab === 'fees' ? 'Student Fees' : 'Teacher Salaries'}
-          </button>
-        ))}
+      {/* Toolbar */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+            <input type="text" placeholder="Search student…" value={search} onChange={(e) => setSearch(e.target.value)} className="input-field pl-9 w-52" />
+          </div>
+          <Select options={[{ value: '', label: 'All Status' }, { value: 'PAID', label: 'Paid' }, { value: 'PENDING', label: 'Pending' }, { value: 'OVERDUE', label: 'Overdue' }, { value: 'CANCELLED', label: 'Cancelled' }]} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="w-36" />
+          <Select options={[{ value: '', label: 'All Fee Types' }, ...feeTypes.map((f) => ({ value: f.name, label: f.name }))]} value={feeTypeFilter} onChange={(e) => setFeeTypeFilter(e.target.value)} className="w-44" />
+        </div>
+        <div className="flex items-center gap-2">
+          <Button size="sm" leftIcon={<Plus className="w-4 h-4" />} onClick={() => setIsCreateOpen(true)}>
+            Add Payment
+          </Button>
+          <Button variant="ghost" size="sm" leftIcon={<Download className="w-4 h-4" />} onClick={handleExport}>
+            Export Excel
+          </Button>
+        </div>
       </div>
 
-      {/* Toolbar */}
-      {activeTab === 'fees' && (
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
-              <input type="text" placeholder="Search student…" value={search} onChange={(e) => setSearch(e.target.value)} className="input-field pl-9 w-52" />
-            </div>
-            <Select options={[{ value: '', label: 'All Status' }, { value: 'PAID', label: 'Paid' }, { value: 'PENDING', label: 'Pending' }, { value: 'OVERDUE', label: 'Overdue' }, { value: 'PARTIAL', label: 'Partial' }]} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="w-36" />
-            <Select options={[{ value: '', label: 'All Fee Types' }, { value: 'Tuition Fee', label: 'Tuition Fee' }, { value: 'Activity Fee', label: 'Activity Fee' }, { value: 'Bus Fee', label: 'Bus Fee' }, { value: 'Lab Fee', label: 'Lab Fee' }]} value={feeTypeFilter} onChange={(e) => setFeeTypeFilter(e.target.value)} className="w-40" />
+      <DataTable
+        columns={paymentColumns}
+        data={filtered}
+        keyExtractor={(r) => r.id}
+        emptyMessage={loading ? 'Loading payment records…' : 'No payment records found.'}
+      />
+
+      <Modal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} title="Add Manual Payment" size="md">
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">Student</label>
+            <select
+              className="input-field w-full"
+              value={form.studentId}
+              onChange={(e) => setForm((p) => ({ ...p, studentId: e.target.value }))}
+            >
+              <option value="">Select student</option>
+              {(students ?? []).map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.user.firstName} {s.user.lastName}
+                </option>
+              ))}
+            </select>
           </div>
-          <Button variant="ghost" size="sm" leftIcon={<Download className="w-4 h-4" />} onClick={handleExport}>Export CSV</Button>
+          <div>
+            <label className="block text-sm font-medium mb-1">Fee Type</label>
+            <select
+              className="input-field w-full"
+              value={form.feeTypeId}
+              onChange={(e) => {
+                const value = e.target.value;
+                const feeType = feeTypes.find((f) => f.id === value);
+                setForm((p) => ({
+                  ...p,
+                  feeTypeId: value,
+                  amount: feeType ? String(Number(feeType.amount)) : p.amount,
+                }));
+              }}
+            >
+              <option value="">Select fee type</option>
+              {feeTypes.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Amount</label>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              className="input-field w-full"
+              value={form.amount}
+              onChange={(e) => setForm((p) => ({ ...p, amount: e.target.value }))}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Due Date</label>
+            <input
+              type="date"
+              className="input-field w-full"
+              value={form.dueDate}
+              onChange={(e) => setForm((p) => ({ ...p, dueDate: e.target.value }))}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Note (optional)</label>
+            <textarea
+              rows={3}
+              className="input-field w-full"
+              value={form.note}
+              onChange={(e) => setForm((p) => ({ ...p, note: e.target.value }))}
+            />
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
+            <Button onClick={handleCreatePayment} disabled={isSubmitting}>
+              {isSubmitting ? 'Saving…' : 'Save Payment'}
+            </Button>
+          </div>
         </div>
-      )}
-
-      {activeTab === 'fees' && (
-        <DataTable columns={paymentColumns} data={filtered} keyExtractor={(r) => r.id} emptyMessage="No payment records found." />
-      )}
-
-      {activeTab === 'salaries' && (
-        <>
-          <div className="flex justify-end mb-4">
-            <Button variant="ghost" size="sm" leftIcon={<Download className="w-4 h-4" />} onClick={handleExport}>Export CSV</Button>
-          </div>
-          <DataTable columns={salaryColumns} data={MOCK_SALARIES} keyExtractor={(r) => r.id} emptyMessage="No salary records." />
-        </>
-      )}
+      </Modal>
     </DashboardLayout>
   );
 }

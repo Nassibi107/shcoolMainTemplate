@@ -103,6 +103,66 @@ async function main() {
 
   console.log(`Student created: ${studentUser.email}`);
 
+  // Create demo assistant
+  const assistantPasswordHash = await bcrypt.hash('Assistant@1234', 12);
+  const assistantUser = await prisma.user.upsert({
+    where: { email_schoolId: { email: 'assistant@scopeschool.io', schoolId: school.id } },
+    update: {},
+    create: {
+      email: 'assistant@scopeschool.io',
+      passwordHash: assistantPasswordHash,
+      role: Role.ASSISTANT,
+      firstName: 'Amina',
+      lastName: 'El Idrissi',
+      schoolId: school.id,
+    },
+  });
+
+  await prisma.assistant.upsert({
+    where: { userId: assistantUser.id },
+    update: {},
+    create: {
+      userId: assistantUser.id,
+      schoolId: school.id,
+      employeeCode: 'AST-0001',
+    },
+  });
+
+  console.log(`Assistant created: ${assistantUser.email}`);
+
+  // Create demo parent linked to demo student
+  const parentPasswordHash = await bcrypt.hash('Parent@1234', 12);
+  const parentUser = await prisma.user.upsert({
+    where: { email_schoolId: { email: 'parent@scopeschool.io', schoolId: school.id } },
+    update: {},
+    create: {
+      email: 'parent@scopeschool.io',
+      passwordHash: parentPasswordHash,
+      role: Role.PARENT,
+      firstName: 'Khadija',
+      lastName: 'Benali',
+      schoolId: school.id,
+    },
+  });
+
+  const parent = await prisma.parent.upsert({
+    where: { userId: parentUser.id },
+    update: {},
+    create: {
+      userId: parentUser.id,
+      schoolId: school.id,
+      occupation: 'Accountant',
+      address: 'Casablanca, Morocco',
+    },
+  });
+
+  await prisma.student.updateMany({
+    where: { userId: studentUser.id },
+    data: { parentId: parent.id },
+  });
+
+  console.log(`Parent created: ${parentUser.email}`);
+
   // Create demo subjects
   const subjects = await Promise.all([
     prisma.subject.upsert({
@@ -142,8 +202,10 @@ async function main() {
   console.log('\n✅ Seed completed successfully!\n');
   console.log('Demo accounts:');
   console.log('  Admin:   admin@scopeschool.io    / Admin@1234');
+  console.log('  Assistant: assistant@scopeschool.io / Assistant@1234');
   console.log('  Teacher: teacher@scopeschool.io  / Teacher@1234');
   console.log('  Student: student@scopeschool.io  / Student@1234');
+  console.log('  Parent:  parent@scopeschool.io   / Parent@1234');
 }
 
 main()

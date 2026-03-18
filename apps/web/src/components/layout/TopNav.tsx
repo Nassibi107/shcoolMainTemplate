@@ -1,7 +1,7 @@
 'use client';
 
 import { Globe } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AuthUser } from '@/lib/auth';
 import { Avatar } from '../ui/Avatar';
 import { NotificationCenter } from '../ui/NotificationCenter';
@@ -13,13 +13,38 @@ interface TopNavProps {
 }
 
 const LANGUAGES = [
-  { code: 'en', label: 'EN' },
-  { code: 'fr', label: 'FR' },
-  { code: 'ar', label: 'AR' },
+  { code: 'fr-MA', label: 'FR-MA' },
+  { code: 'ar-MA', label: 'AR-MA' },
+  { code: 'en-US', label: 'EN' },
+];
+
+const CURRENCIES = [
+  { code: 'MAD', label: 'DH' },
+  { code: 'USD', label: 'USD' },
+  { code: 'EUR', label: 'EUR' },
 ];
 
 export function TopNav({ user, pageTitle }: TopNavProps) {
-  const [lang, setLang] = useState('en');
+  const [lang, setLang] = useState('fr-MA');
+  const [currency, setCurrency] = useState('MAD');
+
+  useEffect(() => {
+    const storedLang = localStorage.getItem('ui:language');
+    const storedCurrency = localStorage.getItem('ui:currency');
+    if (storedLang) setLang(storedLang);
+    if (storedCurrency) setCurrency(storedCurrency);
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('ui:language', lang);
+    document.documentElement.lang = lang;
+    window.dispatchEvent(new Event('ui:prefs-change'));
+  }, [lang]);
+
+  useEffect(() => {
+    localStorage.setItem('ui:currency', currency);
+    window.dispatchEvent(new Event('ui:prefs-change'));
+  }, [currency]);
 
   return (
     <header className="h-16 bg-card border-b border-border flex items-center justify-between px-6 shrink-0">
@@ -42,6 +67,15 @@ export function TopNav({ user, pageTitle }: TopNavProps) {
           >
             {LANGUAGES.map((l) => (
               <option key={l.code} value={l.code}>{l.label}</option>
+            ))}
+          </select>
+          <select
+            value={currency}
+            onChange={(e) => setCurrency(e.target.value)}
+            className="text-xs text-app-text bg-transparent border-none outline-none cursor-pointer"
+          >
+            {CURRENCIES.map((c) => (
+              <option key={c.code} value={c.code}>{c.label}</option>
             ))}
           </select>
         </div>

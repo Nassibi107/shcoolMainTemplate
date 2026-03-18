@@ -1,8 +1,9 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
-import { ClassesService, CreateClassDto } from './classes.service';
+import { ClassesService, CreateClassDto, CreateLessonDto } from './classes.service';
 import { Roles } from '../common/decorators/roles.decorator';
+import { CurrentUser, JwtPayload } from '../common/decorators/current-user.decorator';
 
 @ApiTags('classes')
 @ApiBearerAuth()
@@ -20,6 +21,34 @@ export class ClassesController {
   @Roles(Role.ADMIN, Role.ASSISTANT, Role.TEACHER)
   findAll(@Param('schoolId') schoolId: string) {
     return this.classesService.findAll(schoolId);
+  }
+
+  @Get('timetable')
+  @Roles(Role.ADMIN, Role.ASSISTANT)
+  getTimetable(@Param('schoolId') schoolId: string) {
+    return this.classesService.getTimetable(schoolId);
+  }
+
+  @Get('timetable/options')
+  @Roles(Role.ADMIN, Role.ASSISTANT)
+  getTimetableOptions(@Param('schoolId') schoolId: string) {
+    return this.classesService.getOptions(schoolId);
+  }
+
+  @Post('timetable/lessons')
+  @Roles(Role.ADMIN, Role.ASSISTANT)
+  createLesson(@Param('schoolId') schoolId: string, @Body() dto: CreateLessonDto) {
+    return this.classesService.createLesson(schoolId, dto);
+  }
+
+  @Get('timetable/teacher/me')
+  @Roles(Role.TEACHER)
+  getMyTimetable(
+    @Param('schoolId') schoolId: string,
+    @CurrentUser() user: JwtPayload,
+    @Query('classId') classId?: string,
+  ) {
+    return this.classesService.getTeacherScheduleByUser(schoolId, user.sub, classId);
   }
 
   @Get(':id')

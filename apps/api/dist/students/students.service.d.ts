@@ -64,6 +64,80 @@ export declare class StudentsService {
         enrollmentDate: Date;
         userId: string;
     }>;
+    findByUserId(userId: string, schoolId: string): Promise<({
+        user: {
+            email: string;
+            firstName: string;
+            lastName: string;
+        };
+        classEnrollments: ({
+            class: {
+                name: string;
+                id: string;
+                code: string;
+            };
+        } & {
+            id: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            classId: string;
+            enrolledAt: Date;
+            leftAt: Date | null;
+            studentId: string;
+        })[];
+    } & {
+        id: string;
+        isActive: boolean;
+        schoolId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        deletedAt: Date | null;
+        address: string | null;
+        dateOfBirth: Date | null;
+        gender: string | null;
+        parentId: string | null;
+        studentCode: string;
+        enrollmentDate: Date;
+        userId: string;
+    }) | null>;
+    findByParentId(parentUserId: string, schoolId: string): Promise<({
+        user: {
+            email: string;
+            firstName: string;
+            lastName: string;
+        };
+        classEnrollments: ({
+            class: {
+                name: string;
+                id: string;
+                code: string;
+            };
+        } & {
+            id: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            classId: string;
+            enrolledAt: Date;
+            leftAt: Date | null;
+            studentId: string;
+        })[];
+    } & {
+        id: string;
+        isActive: boolean;
+        schoolId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        deletedAt: Date | null;
+        address: string | null;
+        dateOfBirth: Date | null;
+        gender: string | null;
+        parentId: string | null;
+        studentCode: string;
+        enrollmentDate: Date;
+        userId: string;
+    })[]>;
     findAll(schoolId: string, filters: FilterStudentsDto): Promise<{
         data: ({
             user: {

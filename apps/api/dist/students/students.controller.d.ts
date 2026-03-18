@@ -2,9 +2,84 @@ import { StudentsService } from './students.service';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { UpdateStudentDto } from './dto/update-student.dto';
 import { FilterStudentsDto } from './dto/filter-students.dto';
+import { JwtPayload } from '../common/decorators/current-user.decorator';
 export declare class StudentsController {
     private studentsService;
     constructor(studentsService: StudentsService);
+    getMyChildren(schoolId: string, user: JwtPayload): Promise<({
+        user: {
+            email: string;
+            firstName: string;
+            lastName: string;
+        };
+        classEnrollments: ({
+            class: {
+                name: string;
+                id: string;
+                code: string;
+            };
+        } & {
+            id: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            classId: string;
+            enrolledAt: Date;
+            leftAt: Date | null;
+            studentId: string;
+        })[];
+    } & {
+        id: string;
+        isActive: boolean;
+        schoolId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        deletedAt: Date | null;
+        address: string | null;
+        dateOfBirth: Date | null;
+        gender: string | null;
+        parentId: string | null;
+        studentCode: string;
+        enrollmentDate: Date;
+        userId: string;
+    })[]>;
+    getMe(schoolId: string, user: JwtPayload): Promise<({
+        user: {
+            email: string;
+            firstName: string;
+            lastName: string;
+        };
+        classEnrollments: ({
+            class: {
+                name: string;
+                id: string;
+                code: string;
+            };
+        } & {
+            id: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            classId: string;
+            enrolledAt: Date;
+            leftAt: Date | null;
+            studentId: string;
+        })[];
+    } & {
+        id: string;
+        isActive: boolean;
+        schoolId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        deletedAt: Date | null;
+        address: string | null;
+        dateOfBirth: Date | null;
+        gender: string | null;
+        parentId: string | null;
+        studentCode: string;
+        enrollmentDate: Date;
+        userId: string;
+    }) | null>;
     create(schoolId: string, dto: CreateStudentDto): Promise<{
         user: {
             email: string;

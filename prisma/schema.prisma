@@ -73,6 +73,12 @@ enum CalendarEventType {
   OTHER
 }
 
+enum DocumentRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum NotificationType {
   INFO
   WARNING
@@ -80,6 +86,7 @@ enum NotificationType {
   PAYMENT_DUE
   GRADE_POSTED
   DOCUMENT_READY
+  DOCUMENT_REQUEST
   LEAVE_UPDATE
   SYSTEM
 }
@@ -136,6 +143,7 @@ model School {
   certificateTemplates CertificateTemplate[]
   certificates       Certificate[]
   calendarEvents     CalendarEvent[]
+  documentRequests   DocumentRequest[]
   notifications      Notification[]
   auditLogs          AuditLog[]
   notificationConfig NotificationConfig?
@@ -171,6 +179,8 @@ model User {
   assistant           Assistant?
   parent              Parent?
   leaveRequestsApproved LeaveRequest[] @relation("ApprovedLeaves")
+  documentRequests    DocumentRequest[] @relation("DocumentRequester")
+  documentRequestsApproved DocumentRequest[] @relation("DocumentApprover")
   notifications       Notification[]
   auditLogs           AuditLog[]
 
@@ -207,6 +217,7 @@ model Student {
   grades          Grade[]
   payments        Payment[]
   certificates    Certificate[]
+  documentRequests DocumentRequest[]
   leaveRequests   LeaveRequest[]
 
   @@unique([studentCode, schoolId])
@@ -548,6 +559,8 @@ model Certificate {
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 
+  documentRequests DocumentRequest[]
+
   @@index([studentId])
   @@index([schoolId])
   @@map("certificates")
@@ -624,6 +637,33 @@ model Notification {
   @@index([userId, isRead])
   @@index([schoolId])
   @@map("notifications")
+}
+
+model DocumentRequest {
+  id          String                @id @default(uuid())
+  requesterId String
+  requester   User                  @relation("DocumentRequester", fields: [requesterId], references: [id])
+  studentId   String
+  student     Student               @relation(fields: [studentId], references: [id])
+  schoolId    String
+  school      School                @relation(fields: [schoolId], references: [id])
+  documentType String
+  note        String?
+  status      DocumentRequestStatus @default(PENDING)
+  approverId  String?
+  approver    User?                 @relation("DocumentApprover", fields: [approverId], references: [id])
+  approverNote String?
+  certificateId String?
+  certificate Certificate?         @relation(fields: [certificateId], references: [id])
+  approvedAt  DateTime?
+  rejectedAt  DateTime?
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  @@index([schoolId])
+  @@index([requesterId])
+  @@index([status])
+  @@map("document_requests")
 }
 
 model NotificationConfig {

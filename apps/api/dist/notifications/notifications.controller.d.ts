@@ -34,4 +34,11 @@ export declare class NotificationsController {
         isRead: boolean;
         sentAt: Date | null;
     }>;
+    notifyTeacherRequest(user: JwtPayload, dto: {
+        title: string;
+        body: string;
+        link?: string;
+    }): Promise<{
+        sent: number;
+    }>;
 }

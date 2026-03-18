@@ -18,6 +18,7 @@ const swagger_1 = require("@nestjs/swagger");
 const client_1 = require("@prisma/client");
 const payments_service_1 = require("./payments.service");
 const roles_decorator_1 = require("../common/decorators/roles.decorator");
+const current_user_decorator_1 = require("../common/decorators/current-user.decorator");
 let PaymentsController = class PaymentsController {
     constructor(paymentsService) {
         this.paymentsService = paymentsService;
@@ -28,11 +29,49 @@ let PaymentsController = class PaymentsController {
     findAll(schoolId, status, studentId) {
         return this.paymentsService.findAll(schoolId, { status, studentId });
     }
+    getFeeTypes(schoolId) {
+        return this.paymentsService.getFeeTypes(schoolId);
+    }
     getSummary(schoolId) {
         return this.paymentsService.getSummary(schoolId);
     }
     getMonthlyRevenue(schoolId) {
         return this.paymentsService.getMonthlyRevenue(schoolId);
+    }
+    async getMyPayments(schoolId, user, month) {
+        const studentId = await this.paymentsService.getStudentIdByUser(schoolId, user.sub);
+        if (!studentId)
+            return [];
+        return this.paymentsService.getByStudent(schoolId, studentId, month);
+    }
+    async exportMyPaymentsExcel(schoolId, user, month, res) {
+        const studentId = await this.paymentsService.getStudentIdByUser(schoolId, user.sub);
+        if (!studentId) {
+            res.status(404).send('Student not found');
+            return;
+        }
+        const buffer = await this.paymentsService.exportStudentPaymentsExcel(schoolId, studentId, month);
+        res.set({
+            'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition': `attachment; filename="my-payments-${month ?? 'all'}.xlsx"`,
+        });
+        res.send(buffer);
+    }
+    async exportMyPaymentsPdf(schoolId, user, month, res) {
+        const studentId = await this.paymentsService.getStudentIdByUser(schoolId, user.sub);
+        if (!studentId) {
+            res.status(404).send('Student not found');
+            return;
+        }
+        const buffer = await this.paymentsService.exportStudentPaymentsPdf(schoolId, studentId, month);
+        res.set({
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': `attachment; filename="my-payments-${month ?? 'all'}.pdf"`,
+        });
+        res.send(buffer);
+    }
+    getStudentPayments(schoolId, studentId, month) {
+        return this.paymentsService.getByStudent(schoolId, studentId, month);
     }
     async exportExcel(schoolId, res) {
         const buffer = await this.paymentsService.exportToExcel(schoolId);
@@ -67,6 +106,14 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], PaymentsController.prototype, "findAll", null);
 __decorate([
+    (0, common_1.Get)('fee-types'),
+    (0, roles_decorator_1.Roles)(client_1.Role.ADMIN, client_1.Role.ASSISTANT),
+    __param(0, (0, common_1.Param)('schoolId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], PaymentsController.prototype, "getFeeTypes", null);
+__decorate([
     (0, common_1.Get)('summary'),
     (0, roles_decorator_1.Roles)(client_1.Role.ADMIN, client_1.Role.ASSISTANT),
     __param(0, (0, common_1.Param)('schoolId')),
@@ -82,6 +129,48 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], PaymentsController.prototype, "getMonthlyRevenue", null);
+__decorate([
+    (0, common_1.Get)('my'),
+    (0, roles_decorator_1.Roles)(client_1.Role.STUDENT),
+    __param(0, (0, common_1.Param)('schoolId')),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
+    __param(2, (0, common_1.Query)('month')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object, String]),
+    __metadata("design:returntype", Promise)
+], PaymentsController.prototype, "getMyPayments", null);
+__decorate([
+    (0, common_1.Get)('my/export/excel'),
+    (0, roles_decorator_1.Roles)(client_1.Role.STUDENT),
+    __param(0, (0, common_1.Param)('schoolId')),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
+    __param(2, (0, common_1.Query)('month')),
+    __param(3, (0, common_1.Res)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object, Object, Object]),
+    __metadata("design:returntype", Promise)
+], PaymentsController.prototype, "exportMyPaymentsExcel", null);
+__decorate([
+    (0, common_1.Get)('my/export/pdf'),
+    (0, roles_decorator_1.Roles)(client_1.Role.STUDENT),
+    __param(0, (0, common_1.Param)('schoolId')),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
+    __param(2, (0, common_1.Query)('month')),
+    __param(3, (0, common_1.Res)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object, Object, Object]),
+    __metadata("design:returntype", Promise)
+], PaymentsController.prototype, "exportMyPaymentsPdf", null);
+__decorate([
+    (0, common_1.Get)('student/:studentId'),
+    (0, roles_decorator_1.Roles)(client_1.Role.ADMIN, client_1.Role.ASSISTANT, client_1.Role.PARENT),
+    __param(0, (0, common_1.Param)('schoolId')),
+    __param(1, (0, common_1.Param)('studentId')),
+    __param(2, (0, common_1.Query)('month')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, String]),
+    __metadata("design:returntype", void 0)
+], PaymentsController.prototype, "getStudentPayments", null);
 __decorate([
     (0, common_1.Get)('export/excel'),
     (0, roles_decorator_1.Roles)(client_1.Role.ADMIN, client_1.Role.ASSISTANT),

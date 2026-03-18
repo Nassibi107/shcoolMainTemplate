@@ -83,6 +83,37 @@ export class StudentsService {
     return student;
   }
 
+  async findByUserId(userId: string, schoolId: string) {
+    return this.prisma.student.findFirst({
+      where: { userId, schoolId, deletedAt: null },
+      include: {
+        user: { select: { firstName: true, lastName: true, email: true } },
+        classEnrollments: {
+          where: { isActive: true },
+          include: { class: { select: { id: true, name: true, code: true } } },
+        },
+      },
+    });
+  }
+
+  async findByParentId(parentUserId: string, schoolId: string) {
+    const parent = await this.prisma.parent.findFirst({
+      where: { userId: parentUserId, schoolId },
+    });
+    if (!parent) return [];
+
+    return this.prisma.student.findMany({
+      where: { parentId: parent.id, schoolId, deletedAt: null },
+      include: {
+        user: { select: { firstName: true, lastName: true, email: true } },
+        classEnrollments: {
+          where: { isActive: true },
+          include: { class: { select: { id: true, name: true, code: true } } },
+        },
+      },
+    });
+  }
+
   async findAll(schoolId: string, filters: FilterStudentsDto) {
     const { search, classId, isActive, paymentStatus, page = 1, limit = 20 } = filters;
     const skip = (page - 1) * limit;

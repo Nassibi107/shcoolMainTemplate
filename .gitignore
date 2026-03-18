@@ -1,4 +1,87 @@
-node_modules
+# -----------------------------
+# Dependencies
+# -----------------------------
+node_modules/
+**/node_modules/
+
+# -----------------------------
+# Environment files
+# -----------------------------
 .env
 .env.*
 !.env.example
+!.env.*.example
+**/.env
+**/.env.*
+!**/.env.example
+!**/.env.*.example
+
+# -----------------------------
+# Logs
+# -----------------------------
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# -----------------------------
+# Build outputs
+# -----------------------------
+dist/
+build/
+coverage/
+.turbo/
+*.tsbuildinfo
+**/dist/
+**/build/
+**/coverage/
+**/*.tsbuildinfo
+
+# -----------------------------
+# Next.js / frontend artifacts
+# -----------------------------
+.next/
+out/
+**/.next/
+**/out/
+
+# -----------------------------
+# Cache / temp
+# -----------------------------
+.cache/
+.eslintcache
+.stylelintcache
+tmp/
+temp/
+**/.cache/
+
+# -----------------------------
+# Testing artifacts
+# -----------------------------
+junit.xml
+test-results/
+playwright-report/
+**/test-results/
+**/playwright-report/
+
+# -----------------------------
+# Editor / IDE
+# -----------------------------
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# -----------------------------
+# OS files
+# -----------------------------
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# -----------------------------
+# Cursor / local AI metadata
+# -----------------------------
+.cursor/

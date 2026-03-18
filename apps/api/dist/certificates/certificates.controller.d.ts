@@ -62,4 +62,5 @@ export declare class CertificatesController {
         issuedAt: Date;
         templateId: string;
     })[]>;
+    downloadById(id: string, schoolId: string, res: Response): Promise<void>;
 }

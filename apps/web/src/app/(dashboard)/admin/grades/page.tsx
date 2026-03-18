@@ -25,14 +25,14 @@ interface GradeRecord {
 }
 
 const MOCK_GRADES: GradeRecord[] = [
-  { id: '1', student: 'Ahmed Hassan', class: '3B', subject: 'Mathematics', score: 87, maxScore: 100, term: 'T2', teacher: 'James Johnson', date: '2024-03-10' },
-  { id: '2', student: 'Sara Ali', class: '3B', subject: 'Physics', score: 92, maxScore: 100, term: 'T2', teacher: 'Wei Chen', date: '2024-03-10' },
-  { id: '3', student: 'Mohamed Saad', class: '3A', subject: 'Mathematics', score: 74, maxScore: 100, term: 'T2', teacher: 'James Johnson', date: '2024-03-11' },
-  { id: '4', student: 'Fatima Omar', class: '3A', subject: 'English', score: 95, maxScore: 100, term: 'T2', teacher: 'Sarah Miller', date: '2024-03-11' },
-  { id: '5', student: 'Youssef Malik', class: '2A', subject: 'Chemistry', score: 68, maxScore: 100, term: 'T2', teacher: 'Priya Sharma', date: '2024-03-12' },
-  { id: '6', student: 'Nour Hassan', class: '2A', subject: 'Biology', score: 81, maxScore: 100, term: 'T2', teacher: 'Priya Sharma', date: '2024-03-12' },
-  { id: '7', student: 'Karim Ali', class: '4A', subject: 'History', score: 78, maxScore: 100, term: 'T2', teacher: 'Omar Hassan', date: '2024-03-13' },
-  { id: '8', student: 'Lena Riad', class: '4A', subject: 'Mathematics', score: 91, maxScore: 100, term: 'T2', teacher: 'James Johnson', date: '2024-03-13' },
+  { id: '1', student: 'Ahmed Hassan', class: '3B', subject: 'Mathematics', score: 17, maxScore: 20, term: 'T2', teacher: 'James Johnson', date: '2024-03-10' },
+  { id: '2', student: 'Sara Ali', class: '3B', subject: 'Physics', score: 18, maxScore: 20, term: 'T2', teacher: 'Wei Chen', date: '2024-03-10' },
+  { id: '3', student: 'Mohamed Saad', class: '3A', subject: 'Mathematics', score: 14, maxScore: 20, term: 'T2', teacher: 'James Johnson', date: '2024-03-11' },
+  { id: '4', student: 'Fatima Omar', class: '3A', subject: 'English', score: 19, maxScore: 20, term: 'T2', teacher: 'Sarah Miller', date: '2024-03-11' },
+  { id: '5', student: 'Youssef Malik', class: '2A', subject: 'Chemistry', score: 13, maxScore: 20, term: 'T2', teacher: 'Priya Sharma', date: '2024-03-12' },
+  { id: '6', student: 'Nour Hassan', class: '2A', subject: 'Biology', score: 16, maxScore: 20, term: 'T2', teacher: 'Priya Sharma', date: '2024-03-12' },
+  { id: '7', student: 'Karim Ali', class: '4A', subject: 'History', score: 15, maxScore: 20, term: 'T2', teacher: 'Omar Hassan', date: '2024-03-13' },
+  { id: '8', student: 'Lena Riad', class: '4A', subject: 'Mathematics', score: 18, maxScore: 20, term: 'T2', teacher: 'James Johnson', date: '2024-03-13' },
 ];
 
 function gradeFromPct(pct: number): { letter: string; variant: 'success' | 'secondary' | 'warning' | 'danger' } {

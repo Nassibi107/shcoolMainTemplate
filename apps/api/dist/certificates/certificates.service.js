@@ -75,6 +75,39 @@ let CertificatesService = class CertificatesService {
         });
         return pdfBuffer;
     }
+    async generatePdfById(certificateId, schoolId) {
+        const certificate = await this.prisma.certificate.findFirst({
+            where: { id: certificateId, schoolId },
+            include: {
+                student: { include: { user: { select: { firstName: true, lastName: true } } } },
+                template: true,
+            },
+        });
+        if (!certificate)
+            throw new common_1.NotFoundException('Certificate not found');
+        const school = await this.prisma.school.findUnique({ where: { id: schoolId } });
+        if (!school)
+            throw new common_1.NotFoundException('School not found');
+        const bodyTexts = {
+            REGISTRATION: 'is duly enrolled and registered as a student at this institution.',
+            COMPLETION: 'has successfully completed the required academic program for this academic year.',
+            DIPLOMA: 'has fulfilled all graduation requirements and is hereby awarded this diploma.',
+            ATTENDANCE: 'has maintained an excellent attendance record throughout the academic year.',
+            GRADUATION_REPORT: 'has completed all requirements and is recognized as a graduate of this institution.',
+            CUSTOM: '',
+        };
+        const html = this.pdfService.buildCertificateHtml({
+            schoolName: school.name,
+            schoolLogo: school.logoUrl ?? undefined,
+            primaryColor: school.primaryColor,
+            accentColor: school.accentColor,
+            studentName: `${certificate.student.user.firstName} ${certificate.student.user.lastName}`,
+            certificateType: certificate.type.replace(/_/g, ' '),
+            bodyText: bodyTexts[certificate.type] ?? '',
+            issuedDate: new Date(certificate.issuedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+        });
+        return this.pdfService.generateFromHtml(html);
+    }
     async getStudentCertificates(studentId, schoolId) {
         return this.prisma.certificate.findMany({
             where: { studentId, schoolId },

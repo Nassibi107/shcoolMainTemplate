@@ -5,12 +5,24 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatCurrency(amount: number, currency = 'USD'): string {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount);
+function getUiPrefs() {
+  if (typeof window === 'undefined') {
+    return { locale: 'fr-MA', currency: 'MAD' };
+  }
+  const locale = localStorage.getItem('ui:language') || 'fr-MA';
+  const currency = localStorage.getItem('ui:currency') || 'MAD';
+  return { locale, currency };
+}
+
+export function formatCurrency(amount: number, currency?: string): string {
+  const prefs = getUiPrefs();
+  const selectedCurrency = currency || prefs.currency || 'MAD';
+  return new Intl.NumberFormat(prefs.locale || 'fr-MA', { style: 'currency', currency: selectedCurrency }).format(amount);
 }
 
 export function formatDate(date: string | Date, options?: Intl.DateTimeFormatOptions): string {
-  return new Intl.DateTimeFormat('en-US', {
+  const prefs = getUiPrefs();
+  return new Intl.DateTimeFormat(prefs.locale || 'fr-MA', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',

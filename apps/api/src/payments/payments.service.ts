@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { PaymentStatus } from '@prisma/client';
 import * as ExcelJS from 'exceljs';
+import { PdfService } from '../certificates/pdf.service';
 
 export interface CreatePaymentDto {
   studentId: string;
@@ -19,7 +20,23 @@ export interface UpdatePaymentStatusDto {
 
 @Injectable()
 export class PaymentsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private pdfService: PdfService,
+  ) {}
+
+  async getFeeTypes(schoolId: string) {
+    return this.prisma.feeType.findMany({
+      where: { schoolId, isActive: true, deletedAt: null },
+      orderBy: { name: 'asc' },
+      select: {
+        id: true,
+        name: true,
+        category: true,
+        amount: true,
+      },
+    });
+  }
 
   async create(schoolId: string, dto: CreatePaymentDto) {
     return this.prisma.payment.create({
@@ -139,5 +156,136 @@ export class PaymentsService {
 
     const buffer = await workbook.xlsx.writeBuffer();
     return Buffer.from(buffer);
+  }
+
+  async getByStudent(schoolId: string, studentId: string, month?: string) {
+    const where: any = { schoolId, studentId, deletedAt: null };
+    if (month) {
+      const [year, monthNum] = month.split('-').map((v) => parseInt(v, 10));
+      if (!Number.isNaN(year) && !Number.isNaN(monthNum)) {
+        const start = new Date(year, monthNum - 1, 1);
+        const end = new Date(year, monthNum, 1);
+        where.dueDate = { gte: start, lt: end };
+      }
+    }
+    return this.prisma.payment.findMany({
+      where,
+      include: {
+        student: { include: { user: { select: { firstName: true, lastName: true } } } },
+        feeType: { select: { name: true, category: true } },
+      },
+      orderBy: { dueDate: 'desc' },
+    });
+  }
+
+  async getStudentIdByUser(schoolId: string, userId: string): Promise<string | null> {
+    const student = await this.prisma.student.findFirst({
+      where: { schoolId, userId, deletedAt: null },
+      select: { id: true },
+    });
+    return student?.id ?? null;
+  }
+
+  async exportStudentPaymentsExcel(schoolId: string, studentId: string, month?: string): Promise<Buffer> {
+    const payments = await this.getByStudent(schoolId, studentId, month);
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet('Monthly Payment Report');
+
+    sheet.columns = [
+      { header: 'Student', key: 'student', width: 28 },
+      { header: 'Fee Type', key: 'feeType', width: 24 },
+      { header: 'Amount', key: 'amount', width: 12 },
+      { header: 'Status', key: 'status', width: 14 },
+      { header: 'Due Date', key: 'dueDate', width: 14 },
+      { header: 'Paid At', key: 'paidAt', width: 14 },
+      { header: 'Reference', key: 'reference', width: 24 },
+    ];
+    sheet.getRow(1).font = { bold: true };
+
+    for (const p of payments as any[]) {
+      sheet.addRow({
+        student: `${p.student.user.firstName} ${p.student.user.lastName}`,
+        feeType: p.feeType.name,
+        amount: Number(p.amount),
+        status: p.status,
+        dueDate: p.dueDate?.toISOString().slice(0, 10),
+        paidAt: p.paidAt ? p.paidAt.toISOString().slice(0, 10) : '',
+        reference: p.reference ?? '',
+      });
+    }
+
+    const total = payments.reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+    const paid = payments.filter((p: any) => p.status === 'PAID').reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+    const pending = total - paid;
+    sheet.addRow({});
+    sheet.addRow({ student: 'TOTAL', amount: total, status: '' });
+    sheet.addRow({ student: 'PAID', amount: paid, status: '' });
+    sheet.addRow({ student: 'PENDING', amount: pending, status: '' });
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    return Buffer.from(buffer);
+  }
+
+  async exportStudentPaymentsPdf(schoolId: string, studentId: string, month?: string): Promise<Buffer> {
+    const payments = await this.getByStudent(schoolId, studentId, month);
+    const student = payments[0]?.student ?? (await this.prisma.student.findFirst({
+      where: { id: studentId, schoolId },
+      include: { user: { select: { firstName: true, lastName: true } } },
+    }));
+    if (!student) throw new NotFoundException('Student not found');
+
+    const total = payments.reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+    const paid = payments.filter((p: any) => p.status === 'PAID').reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+    const pending = total - paid;
+
+    const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <style>
+    body { font-family: Arial, sans-serif; padding: 24px; color: #1C2B3A; }
+    h1 { color: #0F1F3D; margin: 0 0 8px; }
+    .meta { color: #6B7A90; font-size: 12px; margin-bottom: 16px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+    th, td { border: 1px solid #DDE3EA; padding: 8px; font-size: 12px; text-align: left; }
+    th { background: #F4F7FA; }
+    .summary { margin-top: 16px; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <h1>Monthly Payment Report</h1>
+  <div class="meta">Student: ${student.user.firstName} ${student.user.lastName} ${month ? `| Month: ${month}` : ''}</div>
+  <table>
+    <thead>
+      <tr>
+        <th>Fee Type</th>
+        <th>Amount</th>
+        <th>Status</th>
+        <th>Due Date</th>
+        <th>Paid At</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${payments.map((p: any) => `
+        <tr>
+          <td>${p.feeType.name}</td>
+          <td>${Number(p.amount).toFixed(2)}</td>
+          <td>${p.status}</td>
+          <td>${p.dueDate ? new Date(p.dueDate).toISOString().slice(0, 10) : ''}</td>
+          <td>${p.paidAt ? new Date(p.paidAt).toISOString().slice(0, 10) : ''}</td>
+        </tr>
+      `).join('')}
+    </tbody>
+  </table>
+  <div class="summary">
+    <div><strong>Total:</strong> ${total.toFixed(2)}</div>
+    <div><strong>Paid:</strong> ${paid.toFixed(2)}</div>
+    <div><strong>Pending:</strong> ${pending.toFixed(2)}</div>
+  </div>
+</body>
+</html>`;
+
+    return this.pdfService.generateFromHtml(html);
   }
 }

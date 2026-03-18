@@ -1,5 +1,6 @@
 import { PrismaService } from '../prisma/prisma.service';
 import { PaymentStatus } from '@prisma/client';
+import { PdfService } from '../certificates/pdf.service';
 export interface CreatePaymentDto {
     studentId: string;
     feeTypeId: string;
@@ -14,7 +15,14 @@ export interface UpdatePaymentStatusDto {
 }
 export declare class PaymentsService {
     private prisma;
-    constructor(prisma: PrismaService);
+    private pdfService;
+    constructor(prisma: PrismaService, pdfService: PdfService);
+    getFeeTypes(schoolId: string): Promise<{
+        name: string;
+        id: string;
+        amount: import("@prisma/client/runtime/library").Decimal;
+        category: import(".prisma/client").$Enums.FeeCategory;
+    }[]>;
     create(schoolId: string, dto: CreatePaymentDto): Promise<{
         student: {
             user: {
@@ -123,4 +131,47 @@ export declare class PaymentsService {
         revenue: number;
     }[]>;
     exportToExcel(schoolId: string): Promise<Buffer>;
+    getByStudent(schoolId: string, studentId: string, month?: string): Promise<({
+        student: {
+            user: {
+                firstName: string;
+                lastName: string;
+            };
+        } & {
+            id: string;
+            isActive: boolean;
+            schoolId: string;
+            createdAt: Date;
+            updatedAt: Date;
+            deletedAt: Date | null;
+            address: string | null;
+            dateOfBirth: Date | null;
+            gender: string | null;
+            parentId: string | null;
+            studentCode: string;
+            enrollmentDate: Date;
+            userId: string;
+        };
+        feeType: {
+            name: string;
+            category: import(".prisma/client").$Enums.FeeCategory;
+        };
+    } & {
+        id: string;
+        schoolId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        deletedAt: Date | null;
+        studentId: string;
+        feeTypeId: string;
+        amount: import("@prisma/client/runtime/library").Decimal;
+        status: import(".prisma/client").$Enums.PaymentStatus;
+        dueDate: Date;
+        paidAt: Date | null;
+        reference: string | null;
+        note: string | null;
+    })[]>;
+    getStudentIdByUser(schoolId: string, userId: string): Promise<string | null>;
+    exportStudentPaymentsExcel(schoolId: string, studentId: string, month?: string): Promise<Buffer>;
+    exportStudentPaymentsPdf(schoolId: string, studentId: string, month?: string): Promise<Buffer>;
 }

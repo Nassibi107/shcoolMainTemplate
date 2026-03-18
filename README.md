@@ -126,6 +126,12 @@ All endpoints are prefixed with `/api/v1`.
 
 Full Swagger documentation available at `/api/docs`.
 
+## Admin Actions
+
+- Admin can create Assistant accounts via `POST /api/v1/schools/:schoolId/users` with role `ASSISTANT`.
+- Assistant can manually add payments from the dashboard.
+- Timetable can be viewed by class or by teacher and exported to PDF/Excel.
+
 ## Database Schema
 
 The schema uses:
@@ -137,5 +143,7 @@ The schema uses:
 See `prisma/schema.prisma` for the complete schema.
 
 Admin: admin@scopeschool.io / Admin@1234
+Assistant: assistant@scopeschool.io / Assistant@1234
 Teacher: teacher@scopeschool.io / Teacher@1234
 Student: student@scopeschool.io / Student@1234
+Parent: parent@scopeschool.io / Parent@1234

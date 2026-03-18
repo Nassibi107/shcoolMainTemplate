@@ -7,6 +7,15 @@ export interface CreateClassDto {
     academicYear: string;
     teacherId?: string;
 }
+export interface CreateLessonDto {
+    classId: string;
+    subjectId: string;
+    teacherId: string;
+    dayOfWeek: number;
+    startTime: string;
+    endTime: string;
+    room?: string;
+}
 export declare class ClassesService {
     private prisma;
     constructor(prisma: PrismaService);
@@ -209,5 +218,163 @@ export declare class ClassesService {
     }>;
     softDelete(id: string, schoolId: string): Promise<{
         message: string;
+    }>;
+    getTimetable(schoolId: string): Promise<{
+        lessons: ({
+            teacher: {
+                user: {
+                    firstName: string;
+                    lastName: string;
+                };
+            } & {
+                id: string;
+                isActive: boolean;
+                schoolId: string;
+                createdAt: Date;
+                updatedAt: Date;
+                deletedAt: Date | null;
+                userId: string;
+                employeeCode: string;
+                qualification: string | null;
+                specialization: string | null;
+                hireDate: Date;
+                salary: import("@prisma/client/runtime/library").Decimal;
+            };
+            subject: {
+                name: string;
+                id: string;
+                code: string;
+                color: string;
+            };
+            class: {
+                name: string;
+                id: string;
+                code: string;
+            };
+        } & {
+            name: string;
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            deletedAt: Date | null;
+            classId: string;
+            teacherId: string;
+            subjectId: string;
+            dayOfWeek: number;
+            startTime: string;
+            endTime: string;
+            room: string | null;
+        })[];
+    }>;
+    getOptions(schoolId: string): Promise<{
+        classes: {
+            name: string;
+            id: string;
+            code: string;
+        }[];
+        teachers: ({
+            user: {
+                firstName: string;
+                lastName: string;
+            };
+        } & {
+            id: string;
+            isActive: boolean;
+            schoolId: string;
+            createdAt: Date;
+            updatedAt: Date;
+            deletedAt: Date | null;
+            userId: string;
+            employeeCode: string;
+            qualification: string | null;
+            specialization: string | null;
+            hireDate: Date;
+            salary: import("@prisma/client/runtime/library").Decimal;
+        })[];
+        subjects: {
+            name: string;
+            id: string;
+            code: string;
+            color: string;
+        }[];
+    }>;
+    createLesson(schoolId: string, dto: CreateLessonDto): Promise<{
+        teacher: {
+            user: {
+                firstName: string;
+                lastName: string;
+            };
+        } & {
+            id: string;
+            isActive: boolean;
+            schoolId: string;
+            createdAt: Date;
+            updatedAt: Date;
+            deletedAt: Date | null;
+            userId: string;
+            employeeCode: string;
+            qualification: string | null;
+            specialization: string | null;
+            hireDate: Date;
+            salary: import("@prisma/client/runtime/library").Decimal;
+        };
+        subject: {
+            name: string;
+            id: string;
+            code: string;
+            color: string;
+        };
+        class: {
+            name: string;
+            id: string;
+            code: string;
+        };
+    } & {
+        name: string;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        deletedAt: Date | null;
+        classId: string;
+        teacherId: string;
+        subjectId: string;
+        dayOfWeek: number;
+        startTime: string;
+        endTime: string;
+        room: string | null;
+    }>;
+    getTeacherScheduleByUser(schoolId: string, userId: string, classId?: string): Promise<{
+        teacherId: string;
+        classes: {
+            name: string;
+            id: string;
+            code: string;
+        }[];
+        lessons: ({
+            subject: {
+                name: string;
+                id: string;
+                code: string;
+                color: string;
+            };
+            class: {
+                name: string;
+                id: string;
+                code: string;
+            };
+        } & {
+            name: string;
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            deletedAt: Date | null;
+            classId: string;
+            teacherId: string;
+            subjectId: string;
+            dayOfWeek: number;
+            startTime: string;
+            endTime: string;
+            room: string | null;
+        })[];
     }>;
 }

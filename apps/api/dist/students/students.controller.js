@@ -21,9 +21,16 @@ const create_student_dto_1 = require("./dto/create-student.dto");
 const update_student_dto_1 = require("./dto/update-student.dto");
 const filter_students_dto_1 = require("./dto/filter-students.dto");
 const roles_decorator_1 = require("../common/decorators/roles.decorator");
+const current_user_decorator_1 = require("../common/decorators/current-user.decorator");
 let StudentsController = class StudentsController {
     constructor(studentsService) {
         this.studentsService = studentsService;
+    }
+    getMyChildren(schoolId, user) {
+        return this.studentsService.findByParentId(user.sub, schoolId);
+    }
+    getMe(schoolId, user) {
+        return this.studentsService.findByUserId(user.sub, schoolId);
     }
     create(schoolId, dto) {
         return this.studentsService.create(schoolId, dto);
@@ -45,6 +52,26 @@ let StudentsController = class StudentsController {
     }
 };
 exports.StudentsController = StudentsController;
+__decorate([
+    (0, common_1.Get)('my-children'),
+    (0, roles_decorator_1.Roles)(client_1.Role.PARENT),
+    (0, swagger_1.ApiOperation)({ summary: 'Get children for parent' }),
+    __param(0, (0, common_1.Param)('schoolId')),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", void 0)
+], StudentsController.prototype, "getMyChildren", null);
+__decorate([
+    (0, common_1.Get)('me'),
+    (0, roles_decorator_1.Roles)(client_1.Role.STUDENT),
+    (0, swagger_1.ApiOperation)({ summary: 'Get current student profile' }),
+    __param(0, (0, common_1.Param)('schoolId')),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", void 0)
+], StudentsController.prototype, "getMe", null);
 __decorate([
     (0, common_1.Post)(),
     (0, roles_decorator_1.Roles)(client_1.Role.ADMIN, client_1.Role.ASSISTANT),

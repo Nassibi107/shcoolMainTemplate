@@ -23,6 +23,7 @@ const certificates_module_1 = require("./certificates/certificates.module");
 const calendar_module_1 = require("./calendar/calendar.module");
 const notifications_module_1 = require("./notifications/notifications.module");
 const reports_module_1 = require("./reports/reports.module");
+const document_requests_module_1 = require("./document-requests/document-requests.module");
 const app_config_1 = require("./config/app.config");
 let AppModule = class AppModule {
 };
@@ -48,6 +49,7 @@ exports.AppModule = AppModule = __decorate([
             calendar_module_1.CalendarModule,
             notifications_module_1.NotificationsModule,
             reports_module_1.ReportsModule,
+            document_requests_module_1.DocumentRequestsModule,
         ],
     })
 ], AppModule);

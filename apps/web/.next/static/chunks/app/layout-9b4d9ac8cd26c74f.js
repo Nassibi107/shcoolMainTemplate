@@ -1,0 +1,21 @@
+(self.webpackChunk_N_E=self.webpackChunk_N_E||[]).push([[3185],{64609:function(e,t,r){Promise.resolve().then(r.t.bind(r,63385,23)),Promise.resolve().then(r.bind(r,67003))},98998:function(e,t,r){"use strict";r.d(t,{Z:function(){return n}});/**
+ * @license lucide-react v0.344.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */let n=(0,r(87461).Z)("AlertCircle",[["circle",{cx:"12",cy:"12",r:"10",key:"1mglay"}],["line",{x1:"12",x2:"12",y1:"8",y2:"12",key:"1pkeuh"}],["line",{x1:"12",x2:"12.01",y1:"16",y2:"16",key:"4dfq90"}]])},28814:function(e,t,r){"use strict";r.d(t,{Z:function(){return n}});/**
+ * @license lucide-react v0.344.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */let n=(0,r(87461).Z)("Info",[["circle",{cx:"12",cy:"12",r:"10",key:"1mglay"}],["path",{d:"M12 16v-4",key:"1dtifu"}],["path",{d:"M12 8h.01",key:"e9boi3"}]])},52235:function(e,t,r){"use strict";r.d(t,{Z:function(){return n}});/**
+ * @license lucide-react v0.344.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */let n=(0,r(87461).Z)("X",[["path",{d:"M18 6 6 18",key:"1bl5f8"}],["path",{d:"m6 6 12 12",key:"d8bk6v"}]])},67003:function(e,t,r){"use strict";r.r(t),r.d(t,{ToastProvider:function(){return f},useToast:function(){return m}});var n=r(57437),c=r(2265);/**
+ * @license lucide-react v0.344.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */let o=(0,r(87461).Z)("CheckCircle2",[["circle",{cx:"12",cy:"12",r:"10",key:"1mglay"}],["path",{d:"m9 12 2 2 4-4",key:"dzmm74"}]]);var s=r(98998),a=r(28814),u=r(52235),i=r(22169);let l=(0,c.createContext)(null);function f(e){let{children:t}=e,[r,o]=(0,c.useState)([]),s=(0,c.useCallback)(e=>{o(t=>t.filter(t=>t.id!==e))},[]),a=(0,c.useCallback)((e,t)=>{let r="toast-".concat(Date.now());o(n=>[...n,{id:r,type:e,message:t}]),setTimeout(()=>s(r),4e3)},[s]);return(0,n.jsxs)(l.Provider,{value:{success:e=>a("success",e),error:e=>a("error",e),info:e=>a("info",e)},children:[t,(0,n.jsx)("div",{className:"fixed bottom-6 right-6 z-50 flex flex-col gap-2 max-w-sm",children:r.map(e=>(0,n.jsx)(d,{toast:e,onRemove:s},e.id))})]})}function d(e){let{toast:t,onRemove:r}=e,c={success:(0,n.jsx)(o,{className:"w-5 h-5 text-success"}),error:(0,n.jsx)(s.Z,{className:"w-5 h-5 text-danger"}),info:(0,n.jsx)(a.Z,{className:"w-5 h-5 text-accent"})};return(0,n.jsxs)("div",{className:(0,i.cn)("flex items-start gap-3 bg-card rounded-card shadow-card-hover px-4 py-3 animate-fade-in",{success:"border-l-4 border-success",error:"border-l-4 border-danger",info:"border-l-4 border-accent"}[t.type]),children:[c[t.type],(0,n.jsx)("p",{className:"flex-1 text-sm text-app-text",children:t.message}),(0,n.jsx)("button",{onClick:()=>r(t.id),className:"text-muted hover:text-primary transition-colors",children:(0,n.jsx)(u.Z,{className:"w-4 h-4"})})]})}function m(){let e=(0,c.useContext)(l);if(!e)throw Error("useToast must be used within ToastProvider");return e}},22169:function(e,t,r){"use strict";r.d(t,{Ie:function(){return l},Qm:function(){return i},cn:function(){return o},p6:function(){return u},xG:function(){return a}});var n=r(25555),c=r(72758);function o(){for(var e=arguments.length,t=Array(e),r=0;r<e;r++)t[r]=arguments[r];return(0,c.m6)((0,n.W)(t))}function s(){return{locale:localStorage.getItem("ui:language")||"fr-MA",currency:localStorage.getItem("ui:currency")||"MAD"}}function a(e,t){let r=s(),n=t||r.currency||"MAD";return new Intl.NumberFormat(r.locale||"fr-MA",{style:"currency",currency:n}).format(e)}function u(e,t){let r=s();return new Intl.DateTimeFormat(r.locale||"fr-MA",{year:"numeric",month:"short",day:"numeric",...t}).format(new Date(e))}function i(e,t){return"".concat(e.charAt(0)).concat(t.charAt(0)).toUpperCase()}function l(e){let t=new URLSearchParams;for(let[r,n]of Object.entries(e))void 0!==n&&""!==n&&t.set(r,String(n));let r=t.toString();return r?"?".concat(r):""}},63385:function(){}},function(e){e.O(0,[3869,2971,8069,1744],function(){return e(e.s=64609)}),_N_E=e.O()}]);
