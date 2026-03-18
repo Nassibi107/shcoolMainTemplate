@@ -10,6 +10,8 @@ import { Modal } from '@/components/ui/Modal';
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Select } from '@/components/ui/Select';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/components/ui/Toast';
+import { generateCertificatePDF } from '@/lib/certificate';
 import { formatDate } from '@/lib/utils';
 
 type CertStatus = 'READY' | 'PENDING' | 'PROCESSING';
@@ -55,39 +57,63 @@ const STATUS_CONFIG: Record<CertStatus, { variant: 'success' | 'warning' | 'seco
   PROCESSING: { variant: 'secondary', label: 'Processing' },
 };
 
-function GenerateCertificateModal({ onClose }: { onClose: () => void }) {
-  const [student, setStudent] = useState('');
+const STUDENT_OPTIONS = [
+  { name: 'Ahmed Hassan', code: 'STU-001', class: '3B' },
+  { name: 'Sara Ali', code: 'STU-002', class: '3B' },
+  { name: 'Mohamed Saad', code: 'STU-003', class: '3A' },
+  { name: 'Fatima Omar', code: 'STU-004', class: '3A' },
+  { name: 'Youssef Malik', code: 'STU-005', class: '2A' },
+];
+
+function GenerateCertificateModal({ onClose, schoolName, onGenerate }: { onClose: () => void; schoolName: string; onGenerate: (msg: string) => void }) {
+  const [studentIdx, setStudentIdx] = useState('0');
   const [certType, setCertType] = useState('Registration Certificate');
-  const [lang, setLang] = useState('English');
+  const [lang, setLang] = useState<'English' | 'Arabic' | 'French'>('English');
+
+  function handleGenerate() {
+    const s = STUDENT_OPTIONS[Number(studentIdx)];
+    if (!s) return;
+    generateCertificatePDF({
+      type: certType,
+      studentName: s.name,
+      studentCode: s.code,
+      class: s.class,
+      academicYear: '2024–2025',
+      schoolName,
+      issueDate: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+      language: lang,
+    });
+    onGenerate(`Certificate for ${s.name} sent to print…`);
+    onClose();
+  }
 
   return (
     <div className="space-y-4">
       <div>
         <label className="block text-sm font-medium text-app-text mb-1">Student</label>
-        <select className="input-field w-full" value={student} onChange={(e) => setStudent(e.target.value)}>
-          <option value="">— Select Student —</option>
-          {['Ahmed Hassan', 'Sara Ali', 'Mohamed Saad', 'Fatima Omar', 'Youssef Malik'].map((s) => (
-            <option key={s} value={s}>{s}</option>
+        <select className="input-field w-full" value={studentIdx} onChange={(e) => setStudentIdx(e.target.value)}>
+          {STUDENT_OPTIONS.map((s, i) => (
+            <option key={i} value={i}>{s.name} · Class {s.class}</option>
           ))}
         </select>
       </div>
       <div>
         <label className="block text-sm font-medium text-app-text mb-1">Certificate Type</label>
         <select className="input-field w-full" value={certType} onChange={(e) => setCertType(e.target.value)}>
-          {['Registration Certificate', 'Attendance Certificate', 'Completion Certificate', 'Grade Report'].map((t) => (
+          {['Registration Certificate', 'Attendance Certificate', 'Completion Certificate', 'Grade Report', 'Good Conduct Certificate'].map((t) => (
             <option key={t} value={t}>{t}</option>
           ))}
         </select>
       </div>
       <div>
         <label className="block text-sm font-medium text-app-text mb-1">Language</label>
-        <select className="input-field w-full" value={lang} onChange={(e) => setLang(e.target.value)}>
+        <select className="input-field w-full" value={lang} onChange={(e) => setLang(e.target.value as 'English' | 'Arabic' | 'French')}>
           {['English', 'Arabic', 'French'].map((l) => <option key={l} value={l}>{l}</option>)}
         </select>
       </div>
       <div className="flex justify-end gap-3 pt-2">
         <Button variant="ghost" onClick={onClose}>Cancel</Button>
-        <Button onClick={onClose} leftIcon={<Download className="w-4 h-4" />}>Generate PDF</Button>
+        <Button onClick={handleGenerate} leftIcon={<Download className="w-4 h-4" />}>Generate PDF</Button>
       </div>
     </div>
   );
@@ -95,6 +121,7 @@ function GenerateCertificateModal({ onClose }: { onClose: () => void }) {
 
 export default function AdminCertificatesPage() {
   const { user } = useAuth();
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState<'requests' | 'templates'>('requests');
   const [isGenerateOpen, setIsGenerateOpen] = useState(false);
   const [requests, setRequests] = useState<CertificateRequest[]>(MOCK_REQUESTS);
@@ -121,8 +148,25 @@ export default function AdminCertificatesPage() {
             </Button>
           )}
           {r.status === 'READY' && (
-            <Button size="sm" variant="ghost" leftIcon={<Download className="w-3 h-3" />}>
-              Download
+            <Button
+              size="sm"
+              variant="ghost"
+              leftIcon={<Download className="w-3 h-3" />}
+              onClick={() => {
+                generateCertificatePDF({
+                  type: r.type,
+                  studentName: r.student,
+                  studentCode: `STU-00${r.id}`,
+                  class: r.class,
+                  academicYear: '2024–2025',
+                  schoolName: user?.school?.name ?? 'Scope School',
+                  issueDate: r.issuedDate ?? new Date().toLocaleDateString(),
+                  language: 'English',
+                });
+                toast.success(`Printing certificate for ${r.student}…`);
+              }}
+            >
+              Download PDF
             </Button>
           )}
         </div>
@@ -201,7 +245,11 @@ export default function AdminCertificatesPage() {
       )}
 
       <Modal isOpen={isGenerateOpen} onClose={() => setIsGenerateOpen(false)} title="Generate Certificate" size="md">
-        <GenerateCertificateModal onClose={() => setIsGenerateOpen(false)} />
+        <GenerateCertificateModal
+          onClose={() => setIsGenerateOpen(false)}
+          schoolName={user?.school?.name ?? 'Scope School'}
+          onGenerate={(msg) => toast.success(msg)}
+        />
       </Modal>
     </DashboardLayout>
   );

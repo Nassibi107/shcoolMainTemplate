@@ -9,9 +9,10 @@ import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { Modal } from '@/components/ui/Modal';
 import { Avatar } from '@/components/ui/Avatar';
-import { SkeletonTable } from '@/components/ui/LoadingSkeleton';
 import { Card } from '@/components/ui/Card';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/components/ui/Toast';
+import { exportTeachersToExcel } from '@/lib/excel';
 import { formatDate } from '@/lib/utils';
 
 interface Teacher {
@@ -105,6 +106,7 @@ function TeacherForm({ onSubmit, defaultValues, isEditing }: {
 
 export default function AdminTeachersPage() {
   const { user } = useAuth();
+  const toast = useToast();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -184,16 +186,18 @@ export default function AdminTeachersPage() {
   ];
 
   function handleExport() {
-    const csv = ['Employee Code,First Name,Last Name,Email,Specialization,Status,Hire Date',
-      ...filtered.map((t) => `${t.employeeCode},${t.user.firstName},${t.user.lastName},${t.user.email},${t.specialization},${t.isActive ? 'Active' : 'Inactive'},${t.hireDate}`)
-    ].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'teachers.csv';
-    a.click();
-    URL.revokeObjectURL(url);
+    exportTeachersToExcel(filtered.map((t) => ({
+      code: t.employeeCode,
+      firstName: t.user.firstName,
+      lastName: t.user.lastName,
+      email: t.user.email,
+      phone: t.user.phone ?? '',
+      specialization: t.specialization,
+      status: t.isActive ? 'Active' : 'Inactive',
+      hireDate: t.hireDate,
+      classes: t.classes.map((c) => c.name).join(', '),
+    })));
+    toast.success(`Exported ${filtered.length} teachers to Excel`);
   }
 
   if (!user) return null;
@@ -268,6 +272,7 @@ export default function AdminTeachersPage() {
             };
             setTeachers((prev) => [...prev, newTeacher]);
             setIsCreateOpen(false);
+            toast.success('Teacher added successfully');
           }}
         />
       </Modal>
@@ -290,6 +295,7 @@ export default function AdminTeachersPage() {
                 : t
               ));
               setEditingTeacher(null);
+              toast.success('Teacher updated successfully');
             }}
           />
         )}

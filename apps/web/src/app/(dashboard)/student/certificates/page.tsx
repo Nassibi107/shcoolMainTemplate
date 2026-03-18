@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/components/ui/Toast';
+import { generateCertificatePDF } from '@/lib/certificate';
 import { formatDate } from '@/lib/utils';
 
 type CertStatus = 'READY' | 'PENDING' | 'PROCESSING';
@@ -38,6 +40,7 @@ const STATUS_CONFIG: Record<CertStatus, { variant: 'success' | 'warning' | 'seco
 
 export default function StudentCertificatesPage() {
   const { user, loading } = useAuth();
+  const toast = useToast();
   const [certs, setCerts] = useState<Certificate[]>(INITIAL_CERTS);
   const [isOpen, setIsOpen] = useState(false);
   const [form, setForm] = useState({ type: CERT_TYPES[0], language: 'English' });
@@ -51,6 +54,22 @@ export default function StudentCertificatesPage() {
       language: form.language,
     }, ...prev]);
     setIsOpen(false);
+    toast.success('Certificate request submitted — ready in 1–2 days');
+  }
+
+  function handleDownload(cert: Certificate) {
+    if (!user) return;
+    generateCertificatePDF({
+      type: cert.type,
+      studentName: `${user.firstName} ${user.lastName}`,
+      studentCode: 'STU-001',
+      class: '3B',
+      academicYear: '2024–2025',
+      schoolName: user.school.name,
+      issueDate: cert.issuedDate ? formatDate(cert.issuedDate) : new Date().toLocaleDateString(),
+      language: cert.language as 'English' | 'Arabic' | 'French',
+    });
+    toast.success('Certificate sent to print dialog');
   }
 
   if (loading || !user) return null;
@@ -95,7 +114,7 @@ export default function StudentCertificatesPage() {
             <div className="flex items-center gap-3 shrink-0">
               <Badge variant={STATUS_CONFIG[cert.status].variant}>{STATUS_CONFIG[cert.status].label}</Badge>
               {cert.status === 'READY' && (
-                <Button size="sm" leftIcon={<Download className="w-3 h-3" />} variant="ghost">
+                <Button size="sm" leftIcon={<Download className="w-3 h-3" />} variant="ghost" onClick={() => handleDownload(cert)}>
                   Download PDF
                 </Button>
               )}

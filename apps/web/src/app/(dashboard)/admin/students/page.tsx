@@ -13,15 +13,13 @@ import { SkeletonTable } from '@/components/ui/LoadingSkeleton';
 import { StudentForm, StudentFormValues } from '@/components/students/StudentForm';
 import { useStudents, createStudent, updateStudent, deleteStudent, Student } from '@/hooks/useStudents';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/components/ui/Toast';
+import { exportStudentsToExcel } from '@/lib/excel';
 import { formatDate } from '@/lib/utils';
-
-const notify = {
-  success: (msg: string) => console.log('[success]', msg),
-  error: (msg: string) => console.error('[error]', msg),
-};
 
 export default function AdminStudentsPage() {
   const { user } = useAuth();
+  const toast = useToast();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [paymentFilter, setPaymentFilter] = useState('');
@@ -140,9 +138,9 @@ export default function AdminStudentsPage() {
       await createStudent(user.school.id, values);
       setIsCreateOpen(false);
       refetch();
-      notify.success('Student enrolled successfully');
+      toast.success('Student enrolled successfully');
     } catch {
-      notify.error('Failed to enroll student');
+      toast.error('Failed to enroll student');
     }
   }
 
@@ -152,9 +150,9 @@ export default function AdminStudentsPage() {
       await updateStudent(user.school.id, editingStudent.id, values);
       setEditingStudent(null);
       refetch();
-      notify.success('Student updated successfully');
+      toast.success('Student updated successfully');
     } catch {
-      notify.error('Failed to update student');
+      toast.error('Failed to update student');
     }
   }
 
@@ -163,10 +161,24 @@ export default function AdminStudentsPage() {
     try {
       await deleteStudent(user.school.id, id);
       refetch();
-      notify.success('Student removed');
+      toast.success('Student removed');
     } catch {
-      notify.error('Failed to remove student');
+      toast.error('Failed to remove student');
     }
+  }
+
+  function handleExport() {
+    exportStudentsToExcel((data ?? []).map((s) => ({
+      code: s.studentCode,
+      firstName: s.user.firstName,
+      lastName: s.user.lastName,
+      email: s.user.email,
+      class: s.classEnrollments?.[0]?.class?.name ?? '—',
+      status: s.isActive ? 'Active' : 'Inactive',
+      paymentStatus: s.payments?.[0]?.status ?? '—',
+      enrollmentDate: s.enrollmentDate,
+    })));
+    toast.success(`Exported ${data?.length ?? 0} students to Excel`);
   }
 
   if (!user) return null;
@@ -209,8 +221,8 @@ export default function AdminStudentsPage() {
           />
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" leftIcon={<Download className="w-4 h-4" />}>
-            Export
+          <Button variant="ghost" size="sm" leftIcon={<Download className="w-4 h-4" />} onClick={handleExport}>
+            Export Excel
           </Button>
           <Button
             size="sm"

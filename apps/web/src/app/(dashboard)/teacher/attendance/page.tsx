@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Select } from '@/components/ui/Select';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/components/ui/Toast';
 import { formatDate } from '@/lib/utils';
 
 type Status = 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED';
@@ -43,6 +44,7 @@ export default function TeacherAttendancePage() {
   const { user, loading } = useAuth();
   const [selectedClass, setSelectedClass] = useState('3A');
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const toast = useToast();
   const [statuses, setStatuses] = useState<Record<string, Status>>({});
   const [saved, setSaved] = useState(false);
 
@@ -66,6 +68,7 @@ export default function TeacherAttendancePage() {
 
   function handleSave() {
     setSaved(true);
+    toast.success(`Attendance saved for Class ${selectedClass} — ${formatDate(date)}`);
     setTimeout(() => setSaved(false), 2000);
   }
 

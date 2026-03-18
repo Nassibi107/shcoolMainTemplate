@@ -9,6 +9,7 @@ import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Select } from '@/components/ui/Select';
 import { Modal } from '@/components/ui/Modal';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/components/ui/Toast';
 
 interface GradeEntry {
   studentId: string;
@@ -56,6 +57,7 @@ export default function TeacherGradebookPage() {
   const { user, loading } = useAuth();
   const [selectedClass, setSelectedClass] = useState('3A');
   const [selectedTerm, setSelectedTerm] = useState('T2');
+  const toast = useToast();
   const [grades, setGrades] = useState<GradeEntry[]>(INITIAL_GRADES);
   const [editingCell, setEditingCell] = useState<{ studentId: string; assessment: string } | null>(null);
   const [cellValue, setCellValue] = useState('');
@@ -95,7 +97,7 @@ export default function TeacherGradebookPage() {
             <input type="text" placeholder="Search student…" value={search} onChange={(e) => setSearch(e.target.value)} className="input-field pl-9 w-48" />
           </div>
         </div>
-        <Button leftIcon={<Save className="w-4 h-4" />} size="sm" onClick={() => setSaved(true)} disabled={saved}>
+        <Button leftIcon={<Save className="w-4 h-4" />} size="sm" onClick={() => { setSaved(true); toast.success('Grades saved successfully'); }} disabled={saved}>
           {saved ? 'Saved!' : 'Save Grades'}
         </Button>
       </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, Search, Download } from 'lucide-react';
+import { Search, Download } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { DataTable, Column } from '@/components/ui/DataTable';
 import { Badge } from '@/components/ui/Badge';
@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { Avatar } from '@/components/ui/Avatar';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/components/ui/Toast';
+import { exportStudentsToExcel } from '@/lib/excel';
 import { formatDate } from '@/lib/utils';
 
 interface Student {
@@ -39,6 +41,7 @@ export default function AssistantStudentsPage() {
   const [search, setSearch] = useState('');
   const [classFilter, setClassFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const toast = useToast();
   const [students, setStudents] = useState<Student[]>(MOCK_STUDENTS);
 
   const filtered = students.filter((s) => {
@@ -83,14 +86,13 @@ export default function AssistantStudentsPage() {
   ];
 
   function handleExport() {
-    const csv = ['Code,First Name,Last Name,Email,Class,Status,Payment,Enrolled',
-      ...filtered.map((s) => `${s.code},${s.firstName},${s.lastName},${s.email},${s.class},${s.isActive ? 'Active' : 'Inactive'},${s.paymentStatus},${s.enrollmentDate}`)
-    ].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = 'students.csv'; a.click();
-    URL.revokeObjectURL(url);
+    exportStudentsToExcel(filtered.map((s) => ({
+      code: s.code, firstName: s.firstName, lastName: s.lastName,
+      email: s.email, class: s.class,
+      status: s.isActive ? 'Active' : 'Inactive',
+      paymentStatus: s.paymentStatus, enrollmentDate: s.enrollmentDate,
+    })));
+    toast.success(`Exported ${filtered.length} students to Excel`);
   }
 
   if (!user) return null;

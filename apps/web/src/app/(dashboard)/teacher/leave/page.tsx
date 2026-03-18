@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/components/ui/Toast';
 import { formatDate } from '@/lib/utils';
 
 type LeaveStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
@@ -46,6 +47,7 @@ const TYPE_LABELS: Record<LeaveType, string> = {
 
 export default function TeacherLeavePage() {
   const { user, loading } = useAuth();
+  const toast = useToast();
   const [leaves, setLeaves] = useState<LeaveRequest[]>(MOCK_LEAVES);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [form, setForm] = useState({ type: 'PERSONAL' as LeaveType, startDate: '', endDate: '', reason: '' });
@@ -67,6 +69,7 @@ export default function TeacherLeavePage() {
     }, ...prev]);
     setIsCreateOpen(false);
     setForm({ type: 'PERSONAL', startDate: '', endDate: '', reason: '' });
+    toast.success('Leave request submitted successfully');
   }
 
   const columns: Column<LeaveRequest>[] = [

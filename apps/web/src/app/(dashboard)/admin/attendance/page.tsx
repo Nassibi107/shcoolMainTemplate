@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/components/ui/Toast';
+import { exportAttendanceToExcel } from '@/lib/excel';
 import { formatDate } from '@/lib/utils';
 
 type AttendanceStatus = 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED';
@@ -61,6 +63,7 @@ function rateToColor(rate: number): string {
 
 export default function AdminAttendancePage() {
   const { user } = useAuth();
+  const toast = useToast();
   const today = new Date();
   const [heatYear] = useState(today.getFullYear());
   const [heatMonth, setHeatMonth] = useState(today.getMonth());
@@ -86,14 +89,11 @@ export default function AdminAttendancePage() {
   }
 
   function handleExport() {
-    const csv = ['Student,Class,Status,Note', ...filteredRecords.map((r) => `${r.name},${r.class},${r.status},${r.note ?? ''}`)].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `attendance-${formatDate(today)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    exportAttendanceToExcel(
+      filteredRecords.map((r) => ({ name: r.name, class: r.class, status: r.status, note: r.note ?? '' })),
+      today.toISOString().slice(0, 10)
+    );
+    toast.success(`Exported ${filteredRecords.length} attendance records to Excel`);
   }
 
   if (!user) return null;

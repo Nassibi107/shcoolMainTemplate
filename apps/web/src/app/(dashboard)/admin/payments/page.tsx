@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/components/ui/Toast';
+import { exportPaymentsToExcel, exportSalariesToExcel } from '@/lib/excel';
 import { formatCurrency, formatDate } from '@/lib/utils';
 
 type PaymentStatus = 'PAID' | 'PENDING' | 'OVERDUE' | 'PARTIAL';
@@ -60,6 +62,7 @@ const STATUS_VARIANTS: Record<PaymentStatus, 'success' | 'warning' | 'danger' | 
 
 export default function AdminPaymentsPage() {
   const { user } = useAuth();
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState<'fees' | 'salaries'>('fees');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -121,17 +124,20 @@ export default function AdminPaymentsPage() {
   ];
 
   function handleExport() {
-    const data = activeTab === 'fees' ? filtered : MOCK_SALARIES;
-    const csv = activeTab === 'fees'
-      ? ['Student,Class,Fee Type,Amount,Paid,Due Date,Paid Date,Status', ...filtered.map((p) => `${p.student},${p.class},${p.feeType},${p.amount},${p.paid},${p.dueDate},${p.paidDate ?? ''},${p.status}`)].join('\n')
-      : ['Teacher,Month,Amount,Status,Paid Date', ...MOCK_SALARIES.map((s) => `${s.teacher},${s.month},${s.amount},${s.status},${s.paidDate ?? ''}`)].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${activeTab}-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    if (activeTab === 'fees') {
+      exportPaymentsToExcel(filtered.map((p) => ({
+        student: p.student, class: p.class, feeType: p.feeType,
+        amount: p.amount, paid: p.paid, balance: p.amount - p.paid,
+        dueDate: p.dueDate, paidDate: p.paidDate ?? '', status: p.status, method: p.method ?? '',
+      })));
+      toast.success(`Exported ${filtered.length} payment records to Excel`);
+    } else {
+      exportSalariesToExcel(MOCK_SALARIES.map((s) => ({
+        teacher: s.teacher, month: s.month, amount: s.amount,
+        status: s.status, paidDate: s.paidDate ?? '',
+      })));
+      toast.success(`Exported ${MOCK_SALARIES.length} salary records to Excel`);
+    }
   }
 
   if (!user) return null;

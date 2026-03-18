@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/components/ui/Toast';
+import { exportGradesToExcel } from '@/lib/excel';
 
 interface GradeRecord {
   id: string;
@@ -43,6 +45,7 @@ function gradeFromPct(pct: number): { letter: string; variant: 'success' | 'seco
 
 export default function AdminGradesPage() {
   const { user } = useAuth();
+  const toast = useToast();
   const [search, setSearch] = useState('');
   const [classFilter, setClassFilter] = useState('');
   const [subjectFilter, setSubjectFilter] = useState('');
@@ -122,20 +125,12 @@ export default function AdminGradesPage() {
   ];
 
   function handleExport() {
-    const csv = ['Student,Class,Subject,Score,Max,Percentage,Grade,Teacher,Term',
-      ...filtered.map((g) => {
-        const pct = Math.round((g.score / g.maxScore) * 100);
-        const { letter } = gradeFromPct(pct);
-        return `${g.student},${g.class},${g.subject},${g.score},${g.maxScore},${pct}%,${letter},${g.teacher},${g.term}`;
-      })
-    ].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'grades.csv';
-    a.click();
-    URL.revokeObjectURL(url);
+    exportGradesToExcel(filtered.map((g) => {
+      const pct = Math.round((g.score / g.maxScore) * 100);
+      const { letter } = gradeFromPct(pct);
+      return { student: g.student, class: g.class, subject: g.subject, score: g.score, maxScore: g.maxScore, percentage: `${pct}%`, grade: letter, teacher: g.teacher, term: g.term };
+    }));
+    toast.success(`Exported ${filtered.length} grade records to Excel`);
   }
 
   if (!user) return null;
