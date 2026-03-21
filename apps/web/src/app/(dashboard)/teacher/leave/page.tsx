@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Plus, CalendarDays } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { DataTable, Column } from '@/components/ui/DataTable';
@@ -13,7 +13,7 @@ import { useToast } from '@/components/ui/Toast';
 import { formatDate } from '@/lib/utils';
 import api from '@/lib/api';
 
-type LeaveStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+type LeaveStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
 type LeaveType = 'SICK' | 'PERSONAL' | 'EMERGENCY' | 'VACATION' | 'OTHER';
 
 interface LeaveRequest {
@@ -30,10 +30,11 @@ interface LeaveRequest {
 
 const INITIAL_LEAVES: LeaveRequest[] = [];
 
-const STATUS_CONFIG: Record<LeaveStatus, { variant: 'success' | 'warning' | 'danger'; label: string }> = {
+const STATUS_CONFIG: Record<LeaveStatus, { variant: 'success' | 'warning' | 'danger' | 'secondary'; label: string }> = {
   APPROVED: { variant: 'success', label: 'Approved' },
   PENDING: { variant: 'warning', label: 'Pending' },
   REJECTED: { variant: 'danger', label: 'Rejected' },
+  CANCELLED: { variant: 'secondary', label: 'Cancelled' },
 };
 
 const TYPE_LABELS: Record<LeaveType, string> = {
@@ -44,39 +45,63 @@ export default function TeacherLeavePage() {
   const { user, loading } = useAuth();
   const toast = useToast();
   const [leaves, setLeaves] = useState<LeaveRequest[]>(INITIAL_LEAVES);
+  const [fetching, setFetching] = useState(true);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [form, setForm] = useState({ type: 'PERSONAL' as LeaveType, startDate: '', endDate: '', reason: '' });
+
+  useEffect(() => {
+    if (!user) return;
+    setFetching(true);
+    api
+      .get(`/schools/${user.school.id}/leaves/my`)
+      .then((res) => {
+        const rows = (res.data ?? []).map((r: any) => ({
+          id: r.id,
+          type: parseLeaveType(r.reason),
+          startDate: r.startDate,
+          endDate: r.endDate,
+          days: Math.max(1, Math.round((new Date(r.endDate).getTime() - new Date(r.startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1),
+          reason: parseReasonText(r.reason),
+          status: r.status as LeaveStatus,
+          submittedAt: r.createdAt,
+          reviewNote: r.note ?? undefined,
+        })) as LeaveRequest[];
+        setLeaves(rows);
+      })
+      .catch(() => setLeaves([]))
+      .finally(() => setFetching(false));
+  }, [user]);
 
   async function handleSubmit() {
     if (!form.startDate || !form.endDate || !form.reason) return;
     const start = new Date(form.startDate);
     const end = new Date(form.endDate);
     const days = Math.max(1, Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1);
-    const newLeave = {
-      id: String(Date.now()),
-      type: form.type,
-      startDate: form.startDate,
-      endDate: form.endDate,
-      days,
-      reason: form.reason,
-      status: 'PENDING',
-      submittedAt: new Date().toISOString().slice(0, 10),
-    } as LeaveRequest;
-    setLeaves((prev) => [newLeave, ...prev]);
-
     try {
-      await api.post('/notifications/teacher-request', {
-        title: 'New Teacher Request',
-        body: `${user?.firstName ?? 'Teacher'} ${user?.lastName ?? ''} requested ${TYPE_LABELS[form.type]} (${form.startDate} to ${form.endDate})`,
-        link: '/notifications',
+      const res = await api.post(`/schools/${user?.school.id}/leaves`, {
+        type: form.type,
+        startDate: form.startDate,
+        endDate: form.endDate,
+        reason: form.reason,
       });
+      setLeaves((prev) => [{
+        id: res.data.id,
+        type: form.type,
+        startDate: form.startDate,
+        endDate: form.endDate,
+        days,
+        reason: form.reason,
+        status: 'PENDING',
+        submittedAt: res.data.createdAt ?? new Date().toISOString(),
+      }, ...prev]);
     } catch {
-      // keep local request even if notification call fails
+      toast.error('Failed to submit leave request');
+      return;
     }
 
     setIsCreateOpen(false);
     setForm({ type: 'PERSONAL', startDate: '', endDate: '', reason: '' });
-    toast.success('Leave request submitted. Admin/Assistant notified.');
+    toast.success('Leave request submitted');
   }
 
   const columns: Column<LeaveRequest>[] = [
@@ -135,7 +160,7 @@ export default function TeacherLeavePage() {
         columns={columns}
         data={leaves}
         keyExtractor={(r) => r.id}
-        emptyMessage="No leave requests submitted."
+        emptyMessage={fetching ? 'Loading leave requests…' : 'No leave requests submitted.'}
         emptyAction={<Button size="sm" onClick={() => setIsCreateOpen(true)}>Submit First Request</Button>}
       />
 
@@ -188,4 +213,17 @@ export default function TeacherLeavePage() {
       </Modal>
     </DashboardLayout>
   );
+}
+
+function parseLeaveType(reason: string): LeaveType {
+  const start = reason.match(/^\[(.*?)\]/)?.[1];
+  if (!start) return 'OTHER';
+  if (start === 'SICK' || start === 'PERSONAL' || start === 'EMERGENCY' || start === 'VACATION' || start === 'OTHER') {
+    return start;
+  }
+  return 'OTHER';
+}
+
+function parseReasonText(reason: string): string {
+  return reason.replace(/^\[(.*?)\]\s*/, '');
 }

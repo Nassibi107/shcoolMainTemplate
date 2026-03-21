@@ -40,7 +40,7 @@ export function middleware(request: NextRequest) {
   const role = payload?.role as keyof typeof ROLE_PREFIXES | undefined;
   const allowedPrefix = role ? ROLE_PREFIXES[role] : null;
 
-  const sharedPaths = ['/notifications', '/dashboard'];
+  const sharedPaths = ['/dashboard'];
   const isSharedPath = sharedPaths.some((p) => pathname === p || pathname.startsWith(p + '/'));
 
   if (allowedPrefix && !isSharedPath) {

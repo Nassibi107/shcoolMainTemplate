@@ -20,6 +20,16 @@ export interface CreateLessonDto {
   room?: string;
 }
 
+export interface UpdateLessonDto {
+  classId?: string;
+  subjectId?: string;
+  teacherId?: string;
+  dayOfWeek?: number;
+  startTime?: string;
+  endTime?: string;
+  room?: string;
+}
+
 @Injectable()
 export class ClassesService {
   constructor(private prisma: PrismaService) {}
@@ -171,6 +181,58 @@ export class ClassesService {
     return this.prisma.lesson.create({
       data: {
         name: `${subject.name} - ${cls.name}`,
+        classId: dto.classId,
+        subjectId: dto.subjectId,
+        teacherId: dto.teacherId,
+        dayOfWeek: dto.dayOfWeek,
+        startTime: dto.startTime,
+        endTime: dto.endTime,
+        room: dto.room,
+      },
+      include: {
+        class: { select: { id: true, name: true, code: true } },
+        subject: { select: { id: true, name: true, code: true, color: true } },
+        teacher: { include: { user: { select: { firstName: true, lastName: true } } } },
+      },
+    });
+  }
+
+  async updateLesson(schoolId: string, lessonId: string, dto: UpdateLessonDto) {
+    const existing = await this.prisma.lesson.findFirst({
+      where: { id: lessonId, class: { schoolId }, deletedAt: null },
+    });
+    if (!existing) throw new NotFoundException('Lesson not found');
+
+    const nextClassId = dto.classId ?? existing.classId;
+    const nextTeacherId = dto.teacherId ?? existing.teacherId;
+    const nextDay = dto.dayOfWeek ?? existing.dayOfWeek;
+    const nextStart = dto.startTime ?? existing.startTime;
+
+    const teacherConflict = await this.prisma.lesson.findFirst({
+      where: {
+        id: { not: lessonId },
+        teacherId: nextTeacherId,
+        dayOfWeek: nextDay,
+        startTime: nextStart,
+        deletedAt: null,
+      },
+    });
+    if (teacherConflict) throw new ConflictException('Teacher already assigned at this time');
+
+    const classConflict = await this.prisma.lesson.findFirst({
+      where: {
+        id: { not: lessonId },
+        classId: nextClassId,
+        dayOfWeek: nextDay,
+        startTime: nextStart,
+        deletedAt: null,
+      },
+    });
+    if (classConflict) throw new ConflictException('Class already has a lesson at this time');
+
+    return this.prisma.lesson.update({
+      where: { id: lessonId },
+      data: {
         classId: dto.classId,
         subjectId: dto.subjectId,
         teacherId: dto.teacherId,

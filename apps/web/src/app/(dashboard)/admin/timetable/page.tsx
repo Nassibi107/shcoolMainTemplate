@@ -36,6 +36,7 @@ export default function AdminTimetablePage() {
   const [subjects, setSubjects] = useState<Array<{ id: string; name: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [editingLessonId, setEditingLessonId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({
     classId: '',
@@ -57,15 +58,15 @@ export default function AdminTimetablePage() {
         setLessons(data);
 
         const classMap = new Map<string, string>();
-        const teacherSet = new Set<string>();
+        const teacherMap = new Map<string, string>();
         data.forEach((l: Lesson) => {
           classMap.set(l.class.id, l.class.name);
           if (l.teacher?.user) {
-            teacherSet.add(`${l.teacher.user.firstName} ${l.teacher.user.lastName}`);
+            teacherMap.set(l.teacher.id, `${l.teacher.user.firstName} ${l.teacher.user.lastName}`);
           }
         });
         setClasses(Array.from(classMap.entries()).map(([id, name]) => ({ id, name })));
-        setTeachers(Array.from(teacherSet).map((name) => ({ id: name, name })));
+        setTeachers(Array.from(teacherMap.entries()).map(([id, name]) => ({ id, name })));
       })
       .catch(() => setLessons([]))
       .finally(() => setLoading(false));
@@ -87,10 +88,7 @@ export default function AdminTimetablePage() {
 
   const filteredLessons = lessons.filter((l) => {
     if (viewMode === 'class' && selectedClass) return l.class.id === selectedClass;
-    if (viewMode === 'teacher' && selectedTeacher) {
-      const teacherName = `${l.teacher.user.firstName} ${l.teacher.user.lastName}`;
-      return teacherName === selectedTeacher;
-    }
+    if (viewMode === 'teacher' && selectedTeacher) return l.teacher.id === selectedTeacher;
     return true;
   });
 
@@ -154,6 +152,7 @@ export default function AdminTimetablePage() {
       });
       toast.success('Lesson created');
       setIsCreateOpen(false);
+      setEditingLessonId(null);
       const refresh = await api.get(`/schools/${user.school.id}/classes/timetable`);
       setLessons(refresh.data?.lessons ?? []);
     } catch (err: any) {
@@ -161,6 +160,49 @@ export default function AdminTimetablePage() {
     } finally {
       setCreating(false);
     }
+  }
+
+  async function handleUpdateLesson() {
+    if (!user || !editingLessonId) return;
+    if (!form.classId || !form.subjectId || !form.teacherId) {
+      toast.error('Please fill required fields');
+      return;
+    }
+    setCreating(true);
+    try {
+      await api.patch(`/schools/${user.school.id}/classes/timetable/lessons/${editingLessonId}`, {
+        classId: form.classId,
+        subjectId: form.subjectId,
+        teacherId: form.teacherId,
+        dayOfWeek: Number(form.dayOfWeek),
+        startTime: form.startTime,
+        endTime: form.endTime,
+        room: form.room || undefined,
+      });
+      toast.success('Lesson updated');
+      setIsCreateOpen(false);
+      setEditingLessonId(null);
+      const refresh = await api.get(`/schools/${user.school.id}/classes/timetable`);
+      setLessons(refresh.data?.lessons ?? []);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? 'Failed to update lesson');
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  function startEdit(lesson: Lesson) {
+    setEditingLessonId(lesson.id);
+    setForm({
+      classId: lesson.class.id,
+      subjectId: lesson.subject.id,
+      teacherId: lesson.teacher.id,
+      dayOfWeek: String(lesson.dayOfWeek),
+      startTime: lesson.startTime.slice(0, 5),
+      endTime: lesson.endTime.slice(0, 5),
+      room: lesson.room ?? '',
+    });
+    setIsCreateOpen(true);
   }
 
   if (!user) return null;
@@ -201,7 +243,19 @@ export default function AdminTimetablePage() {
           )}
         </div>
         <div className="flex gap-2">
-          <Button size="sm" onClick={() => setIsCreateOpen(true)}>
+          <Button size="sm" onClick={() => {
+            setEditingLessonId(null);
+            setForm({
+              classId: '',
+              subjectId: '',
+              teacherId: '',
+              dayOfWeek: '1',
+              startTime: '08:00',
+              endTime: '09:00',
+              room: '',
+            });
+            setIsCreateOpen(true);
+          }}>
             Add Lesson
           </Button>
           <Button size="sm" variant="ghost" leftIcon={<Download className="w-4 h-4" />} onClick={handleExportPdf}>
@@ -213,7 +267,7 @@ export default function AdminTimetablePage() {
         </div>
       </div>
 
-      <Modal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} title="Create Timetable Lesson" size="md">
+      <Modal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} title={editingLessonId ? 'Edit Timetable Lesson' : 'Create Timetable Lesson'} size="md">
         <div className="space-y-4">
           <Select
             options={[{ value: '', label: 'Select class' }, ...classes.map((c) => ({ value: c.id, label: c.name }))]}
@@ -264,8 +318,8 @@ export default function AdminTimetablePage() {
           />
           <div className="flex justify-end gap-2">
             <Button variant="ghost" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
-            <Button onClick={handleCreateLesson} disabled={creating}>
-              {creating ? 'Creating…' : 'Create'}
+            <Button onClick={editingLessonId ? handleUpdateLesson : handleCreateLesson} disabled={creating}>
+              {creating ? (editingLessonId ? 'Updating…' : 'Creating…') : (editingLessonId ? 'Update' : 'Create')}
             </Button>
           </div>
         </div>
@@ -312,6 +366,13 @@ export default function AdminTimetablePage() {
                                 : l.class.name}
                             </p>
                             {l.room && <p className="text-muted text-[10px]">Room: {l.room}</p>}
+                            <button
+                              className="mt-1 text-[10px] text-accent hover:underline"
+                              onClick={() => startEdit(l)}
+                              type="button"
+                            >
+                              Edit
+                            </button>
                           </div>
                         ))}
                       </td>

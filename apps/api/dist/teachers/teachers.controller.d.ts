@@ -1,4 +1,5 @@
 import { TeachersService, CreateTeacherDto, UpdateTeacherDto } from './teachers.service';
+import { JwtPayload } from '../common/decorators/current-user.decorator';
 export declare class TeachersController {
     private teachersService;
     constructor(teachersService: TeachersService);
@@ -60,6 +61,30 @@ export declare class TeachersController {
         specialization: string | null;
         hireDate: Date;
         salary: import("@prisma/client/runtime/library").Decimal;
+    })[]>;
+    getMySchedule(schoolId: string, user: JwtPayload): Promise<({
+        subject: {
+            name: string;
+            code: string;
+            color: string;
+        };
+        class: {
+            name: string;
+            code: string;
+        };
+    } & {
+        name: string;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        deletedAt: Date | null;
+        classId: string;
+        teacherId: string;
+        subjectId: string;
+        dayOfWeek: number;
+        startTime: string;
+        endTime: string;
+        room: string | null;
     })[]>;
     findOne(id: string, schoolId: string): Promise<{
         user: {

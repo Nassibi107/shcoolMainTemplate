@@ -1,8 +1,9 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param } from '@nestjs/common';
+﻿import { Controller, Get, Post, Patch, Delete, Body, Param } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { TeachersService, CreateTeacherDto, UpdateTeacherDto } from './teachers.service';
 import { Roles } from '../common/decorators/roles.decorator';
+import { CurrentUser, JwtPayload } from '../common/decorators/current-user.decorator';
 
 @ApiTags('teachers')
 @ApiBearerAuth()
@@ -24,6 +25,15 @@ export class TeachersController {
     return this.teachersService.findAll(schoolId);
   }
 
+  // IMPORTANT: me/schedule must come BEFORE :id and :id/schedule
+  // so NestJS does not treat "me" as a dynamic :id param.
+  @Get('me/schedule')
+  @Roles(Role.TEACHER)
+  @ApiOperation({ summary: 'Get current teacher weekly schedule' })
+  getMySchedule(@Param('schoolId') schoolId: string, @CurrentUser() user: JwtPayload) {
+    return this.teachersService.getMySchedule(user.sub, schoolId);
+  }
+
   @Get(':id')
   @Roles(Role.ADMIN, Role.ASSISTANT, Role.TEACHER)
   @ApiOperation({ summary: 'Get teacher by ID' })
@@ -33,7 +43,7 @@ export class TeachersController {
 
   @Get(':id/schedule')
   @Roles(Role.ADMIN, Role.ASSISTANT, Role.TEACHER)
-  @ApiOperation({ summary: 'Get teacher weekly schedule' })
+  @ApiOperation({ summary: 'Get teacher weekly schedule by ID' })
   getSchedule(@Param('id') id: string, @Param('schoolId') schoolId: string) {
     return this.teachersService.getSchedule(id, schoolId);
   }

@@ -4,7 +4,6 @@ import { Globe } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { AuthUser } from '@/lib/auth';
 import { Avatar } from '../ui/Avatar';
-import { NotificationCenter } from '../ui/NotificationCenter';
 import Link from 'next/link';
 
 interface TopNavProps {
@@ -79,9 +78,6 @@ export function TopNav({ user, pageTitle }: TopNavProps) {
             ))}
           </select>
         </div>
-
-        {/* Notification Center */}
-        <NotificationCenter />
 
         {/* User avatar — links to account page */}
         <Link

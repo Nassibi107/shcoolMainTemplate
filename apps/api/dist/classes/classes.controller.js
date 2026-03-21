@@ -38,6 +38,9 @@ let ClassesController = class ClassesController {
     createLesson(schoolId, dto) {
         return this.classesService.createLesson(schoolId, dto);
     }
+    updateLesson(schoolId, lessonId, dto) {
+        return this.classesService.updateLesson(schoolId, lessonId, dto);
+    }
     getMyTimetable(schoolId, user, classId) {
         return this.classesService.getTeacherScheduleByUser(schoolId, user.sub, classId);
     }
@@ -94,6 +97,16 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], ClassesController.prototype, "createLesson", null);
+__decorate([
+    (0, common_1.Patch)('timetable/lessons/:lessonId'),
+    (0, roles_decorator_1.Roles)(client_1.Role.ADMIN, client_1.Role.ASSISTANT),
+    __param(0, (0, common_1.Param)('schoolId')),
+    __param(1, (0, common_1.Param)('lessonId')),
+    __param(2, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:returntype", void 0)
+], ClassesController.prototype, "updateLesson", null);
 __decorate([
     (0, common_1.Get)('timetable/teacher/me'),
     (0, roles_decorator_1.Roles)(client_1.Role.TEACHER),

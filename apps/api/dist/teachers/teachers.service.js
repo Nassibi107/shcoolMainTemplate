@@ -122,6 +122,15 @@ let TeachersService = class TeachersService {
             orderBy: [{ dayOfWeek: 'asc' }, { startTime: 'asc' }],
         });
     }
+    async getMySchedule(userId, schoolId) {
+        const teacher = await this.prisma.teacher.findFirst({
+            where: { userId, schoolId, deletedAt: null },
+            select: { id: true },
+        });
+        if (!teacher)
+            throw new common_1.NotFoundException('Teacher profile not found for this user');
+        return this.getSchedule(teacher.id, schoolId);
+    }
 };
 exports.TeachersService = TeachersService;
 exports.TeachersService = TeachersService = __decorate([

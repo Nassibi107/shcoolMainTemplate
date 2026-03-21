@@ -16,6 +16,15 @@ export interface CreateLessonDto {
     endTime: string;
     room?: string;
 }
+export interface UpdateLessonDto {
+    classId?: string;
+    subjectId?: string;
+    teacherId?: string;
+    dayOfWeek?: number;
+    startTime?: string;
+    endTime?: string;
+    room?: string;
+}
 export declare class ClassesService {
     private prisma;
     constructor(prisma: PrismaService);
@@ -299,6 +308,51 @@ export declare class ClassesService {
         }[];
     }>;
     createLesson(schoolId: string, dto: CreateLessonDto): Promise<{
+        teacher: {
+            user: {
+                firstName: string;
+                lastName: string;
+            };
+        } & {
+            id: string;
+            isActive: boolean;
+            schoolId: string;
+            createdAt: Date;
+            updatedAt: Date;
+            deletedAt: Date | null;
+            userId: string;
+            employeeCode: string;
+            qualification: string | null;
+            specialization: string | null;
+            hireDate: Date;
+            salary: import("@prisma/client/runtime/library").Decimal;
+        };
+        subject: {
+            name: string;
+            id: string;
+            code: string;
+            color: string;
+        };
+        class: {
+            name: string;
+            id: string;
+            code: string;
+        };
+    } & {
+        name: string;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        deletedAt: Date | null;
+        classId: string;
+        teacherId: string;
+        subjectId: string;
+        dayOfWeek: number;
+        startTime: string;
+        endTime: string;
+        room: string | null;
+    }>;
+    updateLesson(schoolId: string, lessonId: string, dto: UpdateLessonDto): Promise<{
         teacher: {
             user: {
                 firstName: string;

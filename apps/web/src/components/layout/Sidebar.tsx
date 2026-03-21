@@ -12,7 +12,6 @@ import {
   FileText,
   CalendarDays,
   Settings,
-  Bell,
   ChevronLeft,
   ChevronRight,
   LogOut,
@@ -34,7 +33,6 @@ interface NavItem {
 const navByRole: Record<string, NavItem[]> = {
   ADMIN: [
     { label: 'Dashboard',     href: '/admin',              icon: LayoutDashboard },
-    { label: 'Notifications', href: '/notifications',     icon: Bell },
     { label: 'Students',      href: '/admin/students',     icon: GraduationCap },
     { label: 'Teachers',      href: '/admin/teachers',     icon: UserCheck },
     { label: 'Classes',       href: '/admin/classes',      icon: BookOpen },
@@ -46,21 +44,21 @@ const navByRole: Record<string, NavItem[]> = {
     { label: 'Documents',     href: '/admin/documents',    icon: FileText },
     { label: 'Calendar',      href: '/admin/calendar',     icon: CalendarDays },
     { label: 'Reports',       href: '/admin/reports',      icon: BarChart3 },
+    { label: 'Leave Requests',href: '/admin/leaves',       icon: FileText },
     { label: 'Settings',      href: '/admin/settings',     icon: Settings },
   ],
   ASSISTANT: [
     { label: 'Dashboard',  href: '/assistant',          icon: LayoutDashboard },
-    { label: 'Notifications', href: '/notifications',  icon: Bell },
     { label: 'Timetable',  href: '/assistant/timetable', icon: CalendarDays },
     { label: 'Students',   href: '/assistant/students', icon: GraduationCap },
     { label: 'Teachers',   href: '/assistant/teachers', icon: UserCheck },
     { label: 'Parents',    href: '/assistant/parents',  icon: Users },
     { label: 'Payments',   href: '/assistant/payments', icon: CreditCard },
     { label: 'Documents',  href: '/assistant/documents',icon: FileText },
+    { label: 'Leave Requests',href: '/assistant/leaves', icon: FileText },
   ],
   TEACHER: [
     { label: 'Dashboard',  href: '/teacher',            icon: LayoutDashboard },
-    { label: 'Notifications', href: '/notifications',   icon: Bell },
     { label: 'Schedule',   href: '/teacher/schedule',   icon: CalendarDays },
     { label: 'Attendance', href: '/teacher/attendance', icon: ClipboardList },
     { label: 'Gradebook',  href: '/teacher/gradebook',  icon: BarChart3 },
@@ -74,7 +72,6 @@ const navByRole: Record<string, NavItem[]> = {
     { label: 'Payments',   href: '/student/payments',    icon: CreditCard },
     { label: 'Certificates',href: '/student/certificates',icon: FileText },
     { label: 'Documents',  href: '/student/documents',  icon: FileText },
-    { label: 'Notifications', href: '/notifications',   icon: Bell },
   ],
   PARENT: [
     { label: 'Dashboard',  href: '/parent',              icon: LayoutDashboard },
@@ -82,7 +79,6 @@ const navByRole: Record<string, NavItem[]> = {
     { label: 'Grades',     href: '/parent/grades',       icon: BarChart3 },
     { label: 'Attendance', href: '/parent/attendance',   icon: ClipboardList },
     { label: 'Documents',  href: '/parent/documents',    icon: FileText },
-    { label: 'Notifications', href: '/notifications',   icon: Bell },
   ],
 };
 

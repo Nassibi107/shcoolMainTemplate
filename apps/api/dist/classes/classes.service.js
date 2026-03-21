@@ -170,6 +170,56 @@ let ClassesService = class ClassesService {
             },
         });
     }
+    async updateLesson(schoolId, lessonId, dto) {
+        const existing = await this.prisma.lesson.findFirst({
+            where: { id: lessonId, class: { schoolId }, deletedAt: null },
+        });
+        if (!existing)
+            throw new common_1.NotFoundException('Lesson not found');
+        const nextClassId = dto.classId ?? existing.classId;
+        const nextTeacherId = dto.teacherId ?? existing.teacherId;
+        const nextDay = dto.dayOfWeek ?? existing.dayOfWeek;
+        const nextStart = dto.startTime ?? existing.startTime;
+        const teacherConflict = await this.prisma.lesson.findFirst({
+            where: {
+                id: { not: lessonId },
+                teacherId: nextTeacherId,
+                dayOfWeek: nextDay,
+                startTime: nextStart,
+                deletedAt: null,
+            },
+        });
+        if (teacherConflict)
+            throw new common_1.ConflictException('Teacher already assigned at this time');
+        const classConflict = await this.prisma.lesson.findFirst({
+            where: {
+                id: { not: lessonId },
+                classId: nextClassId,
+                dayOfWeek: nextDay,
+                startTime: nextStart,
+                deletedAt: null,
+            },
+        });
+        if (classConflict)
+            throw new common_1.ConflictException('Class already has a lesson at this time');
+        return this.prisma.lesson.update({
+            where: { id: lessonId },
+            data: {
+                classId: dto.classId,
+                subjectId: dto.subjectId,
+                teacherId: dto.teacherId,
+                dayOfWeek: dto.dayOfWeek,
+                startTime: dto.startTime,
+                endTime: dto.endTime,
+                room: dto.room,
+            },
+            include: {
+                class: { select: { id: true, name: true, code: true } },
+                subject: { select: { id: true, name: true, code: true, color: true } },
+                teacher: { include: { user: { select: { firstName: true, lastName: true } } } },
+            },
+        });
+    }
     async getTeacherScheduleByUser(schoolId, userId, classId) {
         const teacher = await this.prisma.teacher.findFirst({
             where: { schoolId, userId, deletedAt: null, isActive: true },

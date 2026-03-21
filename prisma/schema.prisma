@@ -178,6 +178,7 @@ model User {
   teacher             Teacher?
   assistant           Assistant?
   parent              Parent?
+  leaveRequests       LeaveRequest[] @relation("LeaveRequester")
   leaveRequestsApproved LeaveRequest[] @relation("ApprovedLeaves")
   documentRequests    DocumentRequest[] @relation("DocumentRequester")
   documentRequestsApproved DocumentRequest[] @relation("DocumentApprover")
@@ -218,7 +219,6 @@ model Student {
   payments        Payment[]
   certificates    Certificate[]
   documentRequests DocumentRequest[]
-  leaveRequests   LeaveRequest[]
 
   @@unique([studentCode, schoolId])
   @@index([schoolId])
@@ -596,7 +596,7 @@ model CalendarEvent {
 model LeaveRequest {
   id          String      @id @default(uuid())
   requesterId String
-  requester   Student?    @relation(fields: [requesterId], references: [id])
+  requester   User        @relation("LeaveRequester", fields: [requesterId], references: [id])
   teacherId   String?
   teacher     Teacher?    @relation(fields: [teacherId], references: [id])
   startDate   DateTime

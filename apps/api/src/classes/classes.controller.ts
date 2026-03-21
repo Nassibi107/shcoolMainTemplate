@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Patch, Delete, Body, Param, Query } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
-import { ClassesService, CreateClassDto, CreateLessonDto } from './classes.service';
+import { ClassesService, CreateClassDto, CreateLessonDto, UpdateLessonDto } from './classes.service';
 import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser, JwtPayload } from '../common/decorators/current-user.decorator';
 
@@ -39,6 +39,16 @@ export class ClassesController {
   @Roles(Role.ADMIN, Role.ASSISTANT)
   createLesson(@Param('schoolId') schoolId: string, @Body() dto: CreateLessonDto) {
     return this.classesService.createLesson(schoolId, dto);
+  }
+
+  @Patch('timetable/lessons/:lessonId')
+  @Roles(Role.ADMIN, Role.ASSISTANT)
+  updateLesson(
+    @Param('schoolId') schoolId: string,
+    @Param('lessonId') lessonId: string,
+    @Body() dto: UpdateLessonDto,
+  ) {
+    return this.classesService.updateLesson(schoolId, lessonId, dto);
   }
 
   @Get('timetable/teacher/me')

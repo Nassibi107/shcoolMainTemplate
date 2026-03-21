@@ -1,4 +1,4 @@
-import { ClassesService, CreateClassDto, CreateLessonDto } from './classes.service';
+import { ClassesService, CreateClassDto, CreateLessonDto, UpdateLessonDto } from './classes.service';
 import { JwtPayload } from '../common/decorators/current-user.decorator';
 export declare class ClassesController {
     private classesService;
@@ -159,6 +159,51 @@ export declare class ClassesController {
         }[];
     }>;
     createLesson(schoolId: string, dto: CreateLessonDto): Promise<{
+        teacher: {
+            user: {
+                firstName: string;
+                lastName: string;
+            };
+        } & {
+            id: string;
+            isActive: boolean;
+            schoolId: string;
+            createdAt: Date;
+            updatedAt: Date;
+            deletedAt: Date | null;
+            userId: string;
+            employeeCode: string;
+            qualification: string | null;
+            specialization: string | null;
+            hireDate: Date;
+            salary: import("@prisma/client/runtime/library").Decimal;
+        };
+        subject: {
+            name: string;
+            id: string;
+            code: string;
+            color: string;
+        };
+        class: {
+            name: string;
+            id: string;
+            code: string;
+        };
+    } & {
+        name: string;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        deletedAt: Date | null;
+        classId: string;
+        teacherId: string;
+        subjectId: string;
+        dayOfWeek: number;
+        startTime: string;
+        endTime: string;
+        room: string | null;
+    }>;
+    updateLesson(schoolId: string, lessonId: string, dto: UpdateLessonDto): Promise<{
         teacher: {
             user: {
                 firstName: string;

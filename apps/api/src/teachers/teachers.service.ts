@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+﻿import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthService } from '../auth/auth.service';
 import { Role } from '@prisma/client';
@@ -139,5 +139,14 @@ export class TeachersService {
       },
       orderBy: [{ dayOfWeek: 'asc' }, { startTime: 'asc' }],
     });
+  }
+
+  async getMySchedule(userId: string, schoolId: string) {
+    const teacher = await this.prisma.teacher.findFirst({
+      where: { userId, schoolId, deletedAt: null },
+      select: { id: true },
+    });
+    if (!teacher) throw new NotFoundException('Teacher profile not found for this user');
+    return this.getSchedule(teacher.id, schoolId);
   }
 }

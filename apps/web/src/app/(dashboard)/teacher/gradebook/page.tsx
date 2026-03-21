@@ -16,16 +16,17 @@ interface GradeEntry {
   name: string;
   code: string;
   scores: Record<string, number | null>;
+  notes: Record<string, string>;
 }
 
 const ASSESSMENTS = ['Quiz 1', 'Quiz 2', 'Midterm', 'Project', 'Final'];
 
 const INITIAL_GRADES: GradeEntry[] = [
-  { studentId: '1', name: 'Ahmed Hassan', code: 'STU-001', scores: { 'Quiz 1': 17, 'Quiz 2': 18, Midterm: 16, Project: 18, Final: null } },
-  { studentId: '2', name: 'Sara Ali', code: 'STU-002', scores: { 'Quiz 1': 18, 'Quiz 2': 17, Midterm: 19, Project: 19, Final: null } },
-  { studentId: '3', name: 'Mohamed Saad', code: 'STU-003', scores: { 'Quiz 1': 14, 'Quiz 2': 15, Midterm: 13, Project: 16, Final: null } },
-  { studentId: '4', name: 'Fatima Omar', code: 'STU-004', scores: { 'Quiz 1': 19, 'Quiz 2': 18, Midterm: 19, Project: 20, Final: null } },
-  { studentId: '5', name: 'Youssef Malik', code: 'STU-005', scores: { 'Quiz 1': 12, 'Quiz 2': 13, Midterm: 11, Project: 14, Final: null } },
+  { studentId: '1', name: 'Ahmed Hassan', code: 'STU-001', scores: { 'Quiz 1': 17, 'Quiz 2': 18, Midterm: 16, Project: 18, Final: null }, notes: {} },
+  { studentId: '2', name: 'Sara Ali', code: 'STU-002', scores: { 'Quiz 1': 18, 'Quiz 2': 17, Midterm: 19, Project: 19, Final: null }, notes: {} },
+  { studentId: '3', name: 'Mohamed Saad', code: 'STU-003', scores: { 'Quiz 1': 14, 'Quiz 2': 15, Midterm: 13, Project: 16, Final: null }, notes: {} },
+  { studentId: '4', name: 'Fatima Omar', code: 'STU-004', scores: { 'Quiz 1': 19, 'Quiz 2': 18, Midterm: 19, Project: 20, Final: null }, notes: {} },
+  { studentId: '5', name: 'Youssef Malik', code: 'STU-005', scores: { 'Quiz 1': 12, 'Quiz 2': 13, Midterm: 11, Project: 14, Final: null }, notes: {} },
 ];
 
 const MAX_SCORES: Record<string, number> = { 'Quiz 1': 20, 'Quiz 2': 20, Midterm: 20, Project: 20, Final: 20 };
@@ -61,6 +62,8 @@ export default function TeacherGradebookPage() {
   const [grades, setGrades] = useState<GradeEntry[]>(INITIAL_GRADES);
   const [editingCell, setEditingCell] = useState<{ studentId: string; assessment: string } | null>(null);
   const [cellValue, setCellValue] = useState('');
+  const [noteEdit, setNoteEdit] = useState<{ studentId: string; assessment: string } | null>(null);
+  const [noteValue, setNoteValue] = useState('');
   const [search, setSearch] = useState('');
   const [saved, setSaved] = useState(false);
 
@@ -154,18 +157,30 @@ export default function TeacherGradebookPage() {
                             max={MAX_SCORES[a]}
                           />
                         ) : (
-                          <button
-                            onClick={() => startEdit(entry.studentId, a, val)}
-                            className={`w-14 text-center text-sm rounded-lg py-1 border transition-all hover:border-accent hover:bg-accent/5 ${
-                              val === null ? 'text-muted border-dashed border-border' :
-                              val >= 90 ? 'text-success bg-success/5 border-success/20' :
-                              val >= 70 ? 'text-warning bg-warning/5 border-warning/20' :
-                              val >= 60 ? 'text-orange-500 bg-orange-50 border-orange-200' :
-                              'text-danger bg-danger/5 border-danger/20'
-                            }`}
-                          >
-                            {val !== null ? val : '—'}
-                          </button>
+                          <div className="flex flex-col items-center gap-1">
+                            <button
+                              onClick={() => startEdit(entry.studentId, a, val)}
+                              className={`w-14 text-center text-sm rounded-lg py-1 border transition-all hover:border-accent hover:bg-accent/5 ${
+                                val === null ? 'text-muted border-dashed border-border' :
+                                val >= 16 ? 'text-success bg-success/5 border-success/20' :
+                                val >= 14 ? 'text-warning bg-warning/5 border-warning/20' :
+                                val >= 12 ? 'text-orange-500 bg-orange-50 border-orange-200' :
+                                'text-danger bg-danger/5 border-danger/20'
+                              }`}
+                            >
+                              {val !== null ? val : '—'}
+                            </button>
+                            <button
+                              onClick={() => {
+                                setNoteEdit({ studentId: entry.studentId, assessment: a });
+                                setNoteValue(entry.notes[a] ?? '');
+                              }}
+                              className="text-[10px] text-accent hover:underline"
+                              type="button"
+                            >
+                              {entry.notes[a] ? 'Edit note' : 'Add note'}
+                            </button>
+                          </div>
                         )}
                       </td>
                     );
@@ -203,6 +218,34 @@ export default function TeacherGradebookPage() {
         </table>
       </Card>
       <p className="text-xs text-muted mt-3">Click any cell to edit. Press Enter to confirm, Escape to cancel.</p>
+      <Modal isOpen={Boolean(noteEdit)} onClose={() => setNoteEdit(null)} title="Exam Note" size="md">
+        <div className="space-y-3">
+          <textarea
+            className="input-field w-full resize-none"
+            rows={4}
+            value={noteValue}
+            onChange={(e) => setNoteValue(e.target.value)}
+            placeholder="Write note for this exam score"
+          />
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setNoteEdit(null)}>Cancel</Button>
+            <Button
+              onClick={() => {
+                if (!noteEdit) return;
+                setGrades((prev) => prev.map((g) => (
+                  g.studentId === noteEdit.studentId
+                    ? { ...g, notes: { ...g.notes, [noteEdit.assessment]: noteValue.trim() } }
+                    : g
+                )));
+                setNoteEdit(null);
+                setSaved(false);
+              }}
+            >
+              Save Note
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </DashboardLayout>
   );
 }

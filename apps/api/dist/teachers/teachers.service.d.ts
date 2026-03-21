@@ -251,4 +251,28 @@ export declare class TeachersService {
         endTime: string;
         room: string | null;
     })[]>;
+    getMySchedule(userId: string, schoolId: string): Promise<({
+        subject: {
+            name: string;
+            code: string;
+            color: string;
+        };
+        class: {
+            name: string;
+            code: string;
+        };
+    } & {
+        name: string;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        deletedAt: Date | null;
+        classId: string;
+        teacherId: string;
+        subjectId: string;
+        dayOfWeek: number;
+        startTime: string;
+        endTime: string;
+        room: string | null;
+    })[]>;
 }
