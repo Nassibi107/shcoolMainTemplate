@@ -147,3 +147,6 @@ Assistant: assistant@scopeschool.io / Assistant@1234
 Teacher: teacher@scopeschool.io / Teacher@1234
 Student: student@scopeschool.io / Student@1234
 Parent: parent@scopeschool.io / Parent@1234
+
+
+tesing
